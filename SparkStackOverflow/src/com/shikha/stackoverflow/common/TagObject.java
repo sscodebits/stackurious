@@ -14,12 +14,12 @@ public class TagObject {
 		this.id = id;
 	}
 
-	public String getTagName() {
-		return tagName;
+	public String getName() {
+		return name;
 	}
 
-	public void setTagName(String tagName) {
-		this.tagName = tagName;
+	public void setName(String tagName) {
+		this.name = tagName;
 	}
 
 	public long getCount() {
@@ -30,18 +30,20 @@ public class TagObject {
 		this.count = count;
 	}
 
-	String tagName;
+	String name;
 	long count;
 	
 	public static TagObject parseElement(Element e) {
 		TagObject p = new TagObject();
 		if (e == null || e.getAttribute("Id").isEmpty()) {
 			p.setId("");
+			p.setName("null");
+			p.setCount(0);
 			return p;
 		}
 		
 		p.setId(e.getAttribute("Id"));
-		p.setTagName(e.getAttribute("TagName"));
+		p.setName(e.getAttribute("TagName"));
 		p.setCount(ParseUtil.parseLong(e, "Count"));
 		return p;
 	}

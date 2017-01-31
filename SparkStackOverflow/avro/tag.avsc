@@ -1,0 +1,9 @@
+{"namespace": "com.shikha.stackoverflow.model",
+ "type": "record",
+ "name": "TagRecord",
+ "fields": [
+     {"name": "id", "type": "string", "default" : "", "doc" : "numeric ID of tag"},
+     {"name": "name", "type": "string", "default" : "", "doc" : "tag name"},
+     {"name": "count", "type": "long", "default" : 0, "doc" : "count of tag"}
+ ]
+}

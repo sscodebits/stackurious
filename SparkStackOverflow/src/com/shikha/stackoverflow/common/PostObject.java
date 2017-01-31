@@ -1,26 +1,33 @@
 package com.shikha.stackoverflow.common;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.w3c.dom.Element;
 
 import com.shikha.stackoverflow.util.ParseUtil;
 
 public class PostObject {
 	String id;
-	String postId;
-	String parentId;
-	String acceptedAnswerId;
-	String creationDate;
+	String post_type_id;
+	String parent_id;
+	String accepted_answer_id;
+	String creation_date;
 	long score;
-	long viewCount;
+	long view_count;
 	String body;
-	String ownerUserId;
-	String closedDate;
+	String owner_user_id;
+	String closed_date;
 	String title;
 	String tags;
-	long answerCount;
-	long commentCount;
-	long favoriteCount;
+	long answer_count;
+	long comment_count;
+	long favorite_count;
 	
+	//  <row Id="20" PostTypeId="1" AcceptedAnswerId="22" CreationDate="2014-09-24T13:40:12.750" Score="9" ViewCount="174" Body="&lt;p&gt;" OwnerUserId="12" LastEditorUserId="105" LastEditDate="2014-09-27T16:10:05.933" LastActivityDate="2015-05-15T15:31:15.983" Title="How should we name our chat room?" 
+	//		Tags="&lt;discussion&gt;&lt;chat&gt;" AnswerCount="5" CommentCount="1" />
+	//  <row Id="21" PostTypeId="2" ParentId="20" CreationDate="2014-09-24T14:06:12.703" Score="7" Body="&lt;p&gt;&lt;code&gt;M-x chat&lt;/code&gt; would be my suggestion. But something less obvious may be better...&lt;/p&gt;&#xA;" OwnerUserId="15" LastActivityDate="2014-09-24T14:06:12.703" CommentCount="1" />
+
 	public static PostObject parseElement(Element e) {
 		PostObject p = new PostObject();
 		if (e == null || e.getAttribute("Id").isEmpty()) {
@@ -29,20 +36,66 @@ public class PostObject {
 		}
 		
 		p.setId(e.getAttribute("Id"));
-		p.setPostId(e.getAttribute("PostId"));
-		p.setParentId(e.getAttribute("ParentId"));
-		p.setAcceptedAnswerId(e.getAttribute("AcceptedAnswerId"));
-		p.setAnswerCount(ParseUtil.parseLong(e, "AnswerCount"));
+		p.setPost_type_id(e.getAttribute("PostTypeId"));
+		p.setParent_id(e.getAttribute("ParentId"));
+		p.setAccepted_answer_id(e.hasAttribute("AcceptedAnswerId") ? e.getAttribute("AcceptedAnswerId") : null);
+		p.setCreation_date(e.getAttribute("CreationDate"));
+		p.setAnswer_count(ParseUtil.parseLong(e, "AnswerCount"));
 		p.setBody(e.getAttribute("Body"));
-		p.setClosedDate(e.getAttribute("ClosedDate"));
-		p.setCommentCount(ParseUtil.parseLong(e, "CommentCount"));
-		p.setFavoriteCount(ParseUtil.parseLong(e, "FavoriteCount"));
-		p.setOwnerUserId(e.getAttribute("OwnerUserId"));
+		p.setClosed_date(e.getAttribute("ClosedDate"));
+		p.setComment_count(ParseUtil.parseLong(e, "CommentCount"));
+		p.setFavorite_count(ParseUtil.parseLong(e, "FavoriteCount"));
+		p.setOwner_user_id(e.getAttribute("OwnerUserId"));
 		p.setScore(ParseUtil.parseLong(e, "Score"));
-		p.setTags(e.getAttribute("Tags"));
+		p.setTags(parseTag(e.getAttribute("Tags")));
 		p.setTitle(e.getAttribute("Title"));
-		p.setViewCount(ParseUtil.parseLong(e, "ViewCount"));
+		p.setView_count(ParseUtil.parseLong(e, "ViewCount"));
 		return p;
+	}
+	
+	private static String parseTag(String tag) {
+		if (tag != null || !tag.isEmpty()) {
+			tag = tag.replaceAll("><", ",");
+			tag = tag.replace("<", "");
+			tag = tag.replace(">", "");
+		}
+		return tag;
+	}
+	
+	public static List<PostObject> flattenTags(PostObject postInput) {
+		List<PostObject> flattenPosts = new ArrayList<PostObject>();
+		if (postInput == null || postInput.getId().isEmpty())
+			return flattenPosts;
+		
+		String tags = postInput.getTags();
+
+		if (tags != null && !tags.isEmpty()) {
+			for (String tag: tags.split(",")) {
+				PostObject newPost = new PostObject();
+				
+				newPost.setId(postInput.getId());
+				newPost.setPost_type_id(postInput.getPost_type_id());
+				newPost.setParent_id(postInput.getParent_id());
+				newPost.setAccepted_answer_id(postInput.getAccepted_answer_id());
+				newPost.setCreation_date(postInput.getCreation_date());
+				newPost.setAnswer_count(postInput.getAnswer_count());
+				newPost.setBody(postInput.getBody());
+				newPost.setClosed_date(postInput.getClosed_date());
+				newPost.setComment_count(postInput.getComment_count());
+				newPost.setFavorite_count(postInput.getFavorite_count());
+				newPost.setOwner_user_id(postInput.getOwner_user_id());
+				newPost.setScore(postInput.getScore());
+				newPost.setTags(tag);
+				newPost.setTitle(postInput.getTitle());
+				newPost.setView_count(postInput.getView_count());
+				
+				flattenPosts.add(newPost);
+			}
+		} else {
+			flattenPosts.add(postInput);
+		}
+		
+		return flattenPosts;
 	}
 	
 	public String getId() {
@@ -53,36 +106,36 @@ public class PostObject {
 		this.id = id;
 	}
 
-	public String getPostId() {
-		return postId;
+	public String getPost_type_id() {
+		return post_type_id;
 	}
 
-	public void setPostId(String postId) {
-		this.postId = postId;
+	public void setPost_type_id(String post_type_id) {
+		this.post_type_id = post_type_id;
 	}
 
-	public String getParentId() {
-		return parentId;
+	public String getParent_id() {
+		return parent_id;
 	}
 
-	public void setParentId(String parentId) {
-		this.parentId = parentId;
+	public void setParent_id(String parent_id) {
+		this.parent_id = parent_id;
 	}
 
-	public String getAcceptedAnswerId() {
-		return acceptedAnswerId;
+	public String getAccepted_answer_id() {
+		return accepted_answer_id;
 	}
 
-	public void setAcceptedAnswerId(String acceptedAnswerId) {
-		this.acceptedAnswerId = acceptedAnswerId;
+	public void setAccepted_answer_id(String accepted_answer_id) {
+		this.accepted_answer_id = accepted_answer_id;
 	}
 
-	public String getCreationDate() {
-		return creationDate;
+	public String getCreation_date() {
+		return creation_date;
 	}
 
-	public void setCreationDate(String creationDate) {
-		this.creationDate = creationDate;
+	public void setCreation_date(String creation_date) {
+		this.creation_date = creation_date;
 	}
 
 	public long getScore() {
@@ -93,12 +146,12 @@ public class PostObject {
 		this.score = score;
 	}
 
-	public long getViewCount() {
-		return viewCount;
+	public long getView_count() {
+		return view_count;
 	}
 
-	public void setViewCount(long viewCount) {
-		this.viewCount = viewCount;
+	public void setView_count(long view_count) {
+		this.view_count = view_count;
 	}
 
 	public String getBody() {
@@ -109,20 +162,20 @@ public class PostObject {
 		this.body = body;
 	}
 
-	public String getOwnerUserId() {
-		return ownerUserId;
+	public String getOwner_user_id() {
+		return owner_user_id;
 	}
 
-	public void setOwnerUserId(String ownerUserId) {
-		this.ownerUserId = ownerUserId;
+	public void setOwner_user_id(String owner_user_id) {
+		this.owner_user_id = owner_user_id;
 	}
 
-	public String getClosedDate() {
-		return closedDate;
+	public String getClosed_date() {
+		return closed_date;
 	}
 
-	public void setClosedDate(String closedDate) {
-		this.closedDate = closedDate;
+	public void setClosed_date(String closed_date) {
+		this.closed_date = closed_date;
 	}
 
 	public String getTitle() {
@@ -141,28 +194,28 @@ public class PostObject {
 		this.tags = tags;
 	}
 
-	public long getAnswerCount() {
-		return answerCount;
+	public long getAnswer_count() {
+		return answer_count;
 	}
 
-	public void setAnswerCount(long answerCount) {
-		this.answerCount = answerCount;
+	public void setAnswer_count(long answer_count) {
+		this.answer_count = answer_count;
 	}
 
-	public long getCommentCount() {
-		return commentCount;
+	public long getComment_count() {
+		return comment_count;
 	}
 
-	public void setCommentCount(long commentCount) {
-		this.commentCount = commentCount;
+	public void setComment_count(long comment_count) {
+		this.comment_count = comment_count;
 	}
 
-	public long getFavoriteCount() {
-		return favoriteCount;
+	public long getFavorite_count() {
+		return favorite_count;
 	}
 
-	public void setFavoriteCount(long favoriteCount) {
-		this.favoriteCount = favoriteCount;
+	public void setFavorite_count(long favorite_count) {
+		this.favorite_count = favorite_count;
 	}
 
 }

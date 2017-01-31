@@ -11,6 +11,11 @@ import org.w3c.dom.Node;
 import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
 
+/**
+ * Parses xml input files using Javax xml parser
+ * @author shikha
+ *
+ */
 public class ParseUtil {
 	public static final String rowTag = "row";
 	
