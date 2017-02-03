@@ -37,7 +37,7 @@ public class SparkDataAnalyzer {
     
 
         processData(spark, inputFile, output, "tags", 
-        		"SELECT id, name, count from tags ORDER BY count DESC",
+        		"SELECT CURRENT_TIMESTAMP as rundate, id, name, count from tags",
         		"tag_counts");
 
         Dataset<Row> postsDF = getDataFrame(spark, inputFile, "posts");
@@ -57,7 +57,7 @@ public class SparkDataAnalyzer {
       postsDF.createOrReplaceTempView("POSTS2");
       // get all questions
       Dataset<Row> questions = spark.sql("SELECT origp.id, origp.tags, origp.creation_date, origp.view_count, origp.title, origp.accepted_answer_id, origp.owner_user_id from POSTS2 origp WHERE origp.post_type_id = '1'");
-      System.out.println("############################## Posts " +postsDF.count() + "Quesitons " +questions.count());
+      System.out.println("############################## Posts " +postsDF.count() + "Questions " +questions.count());
       
       questions.createOrReplaceTempView("Questions");
 
@@ -88,10 +88,14 @@ public class SparkDataAnalyzer {
       answeredPosts.createOrReplaceTempView("answeredPosts");
       Dataset<Row> expertsByTag = spark.sql("SELECT origp.id, origp.creation_date, origp.view_count, origp.title, origp.tags as tag, ansp.owner_user_id as expert_id from answeredPosts origp JOIN (SELECT * from POSTS2) ansp ON origp.accepted_answer_id=ansp.id");
       System.out.println("############################## questions " +questions.count() + " answer " + expertsByTag.count());
+
+      // load user data
+      Dataset<Row> usersDF = getDataFrame(spark, inputFile, "users");
+      usersDF.createOrReplaceTempView("users");
       
       //   count the number of answers of each user per tag
       storeResults(spark, expertsByTag, output, "experts",
-    		  "SELECT tag, expert_id, count(*) as ans_count FROM experts GROUP BY tag, expert_id HAVING count(*) > 5",
+    		  "SELECT tag, count(*) as ans_count, user.display_name as expert_name FROM experts JOIN (SELECT * from users) user ON experts.expert_id=user.id GROUP BY tag, user.display_name HAVING count(*) > 5",
     		  "tag_experts");
 
 

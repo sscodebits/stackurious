@@ -18,6 +18,7 @@ import org.w3c.dom.Element;
 
 import com.shikha.stackoverflow.common.PostObject;
 import com.shikha.stackoverflow.common.TagObject;
+import com.shikha.stackoverflow.common.UserObject;
 import com.shikha.stackoverflow.model.TagRecord;
 import com.shikha.stackoverflow.util.ParseUtil;
 import com.shikha.stackoverflow.util.RecordUtil;
@@ -91,6 +92,27 @@ public class SparkIngestion {
         
         tagDF.write()
           .save(output + "/tags");
+        
+        @SuppressWarnings("unchecked")
+		JavaRDD<UserObject> usersRDD =
+        spark.read()
+         .textFile(inputFile + "/Users.xml")
+         .javaRDD()
+         .mapPartitionsWithIndex(removeHeader, false)
+         .map(new Function<String, UserObject>() {
+        	 @Override
+        	 public UserObject call(String line) throws Exception {
+        		 Element e = ParseUtil.parseString(line);
+                 return UserObject.parseElement(e);
+        		 //return RecordUtil.parseTag(e);
+        	 }
+         });
+        
+        Dataset<Row> userDF = spark.createDataFrame(usersRDD, UserObject.class);
+        
+        userDF.write()
+          .save(output + "/users");
+        
 
         @SuppressWarnings("unchecked")
 		JavaRDD<PostObject> postRDD =
