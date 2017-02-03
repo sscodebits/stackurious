@@ -4,6 +4,13 @@ import org.w3c.dom.Element;
 
 import com.shikha.stackoverflow.util.ParseUtil;
 
+/**
+ * User object
+ * <row Id="24" Reputation="982" CreationDate="2014-09-23T18:29:49.000" DisplayName="artagnon" LastAccessDate="2015-11-28T15:18:18.633" WebsiteUrl="http://artagnon.com" Location="New York, United States" AboutMe="&lt;p&gt;Programmer who likes low-level details.&lt;/p&gt;&#xA;" Views="0" UpVotes="0" DownVotes="0" Age="28" AccountId="49024" />
+ * @author shikha
+ *
+ */
+
 public class UserObject {
 	String id;
 	long reputation;
