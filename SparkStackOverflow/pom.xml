@@ -50,31 +50,7 @@
           <target>1.8</target>
         </configuration>
       </plugin>
-      <plugin>
-  <groupId>org.apache.avro</groupId>
-  <artifactId>avro-maven-plugin</artifactId>
-  <version>1.8.1</version>
-  <executions>
-    <execution>
-      <phase>generate-sources</phase>
-      <goals>
-        <goal>schema</goal>
-      </goals>
-      <configuration>
-        <sourceDirectory>${project.basedir}/avro</sourceDirectory>
-        <outputDirectory>${project.basedir}/src</outputDirectory>
-      </configuration>
-    </execution>
-  </executions>
-</plugin>
     </plugins>
-    <resources>
-      <resource>
-        <directory>avro</directory>
-        <includes>
-          <include>**/*.avsc</include>
-        </includes>
-      </resource>
-      </resources>
+
   </build>
 </project>

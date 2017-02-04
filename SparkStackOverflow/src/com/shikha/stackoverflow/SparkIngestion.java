@@ -1,8 +1,5 @@
 package com.shikha.stackoverflow;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
@@ -12,18 +9,13 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
-import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
 import org.w3c.dom.Element;
 
 import com.shikha.stackoverflow.common.PostObject;
 import com.shikha.stackoverflow.common.TagObject;
 import com.shikha.stackoverflow.common.UserObject;
-import com.shikha.stackoverflow.model.TagRecord;
 import com.shikha.stackoverflow.util.ParseUtil;
-import com.shikha.stackoverflow.util.RecordUtil;
-
-import org.apache.avro.Schema;
 
 /**
  * This class read the xml file from s3 and parses it  
