@@ -39,7 +39,7 @@ public class PostObject {
 		p.setPost_type_id(e.getAttribute("PostTypeId"));
 		p.setParent_id(e.getAttribute("ParentId"));
 		p.setAccepted_answer_id(e.hasAttribute("AcceptedAnswerId") ? e.getAttribute("AcceptedAnswerId") : null);
-		p.setCreation_date(e.getAttribute("CreationDate"));
+		p.setCreation_date(ParseUtil.convertDate(e.getAttribute("CreationDate")));
 		p.setAnswer_count(ParseUtil.parseLong(e, "AnswerCount"));
 		p.setBody(e.getAttribute("Body"));
 		p.setClosed_date(e.getAttribute("ClosedDate"));

@@ -45,6 +45,16 @@ public class ParseUtil {
 		}
 		return null;
 	}
+	
+	static private String letterT = "T";
+	static private String letterSpace = " ";
+	public static String convertDate(String date) {
+		if (date == null || date.isEmpty()) {
+			return date;
+		}
+		
+		return date.replaceFirst(letterT, letterSpace);
+	}
 
 	public static long parseLong(Element e, String attr) {
 		if (e.getAttribute(attr).isEmpty()) {

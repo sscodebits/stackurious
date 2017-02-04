@@ -61,6 +61,13 @@ public class SparkDataAnalyzer {
       
       questions.createOrReplaceTempView("Questions");
 
+      // get tag counts by month
+      storeResults(spark, questions, output, "tag_counts_by_m",
+    		  "SELECT tags as name, year(creation_date) as year, month(creation_date) as month, count(*) as count FROM tag_counts_by_m GROUP BY year(creation_date), month(creation_date), tags",
+    		  "tag_counts_by_month");
+      
+      
+      
       //dense_rank and other spark window function
       //https://databricks.com/blog/2015/07/15/introducing-window-functions-in-spark-sql.html
       //http://stackoverflow.com/questions/36660625/spark-sql-top-n-per-group
@@ -70,7 +77,7 @@ public class SparkDataAnalyzer {
       System.out.println("############################## questions " +questions.count() + " unanswer " + unansweredPosts.count());
       // store top 10 unanswered questions per tag
       storeResults(spark, unansweredPosts, output, "posts_u",
-    		  "SELECT id,tags, creation_date,view_count,title FROM (SELECT id,tags, creation_date,view_count,title,dense_rank() OVER (PARTITION BY tags ORDER BY view_count DESC) as rank  FROM posts_u) tmp where rank <=5",
+    		  "SELECT id,tags, creation_date, unix_timestamp(creation_date) as cdate, view_count,title FROM (SELECT id,tags, creation_date,view_count,title,dense_rank() OVER (PARTITION BY tags ORDER BY view_count DESC) as rank  FROM posts_u) tmp where rank <=5",
     		  "faq_unanswered");
 
       // get all answered questions
@@ -78,7 +85,7 @@ public class SparkDataAnalyzer {
       System.out.println("############################## questions " +questions.count() + " answer " + answeredPosts.count());
       // store top 10 answered questions per tag
       storeResults(spark, answeredPosts, output, "posts_a",
-    		  "SELECT id,tags, creation_date,view_count,title FROM (SELECT id,tags, creation_date,view_count,title,dense_rank() OVER (PARTITION BY tags ORDER BY view_count DESC) as rank  FROM posts_a) tmp where rank <=5",
+    		  "SELECT id,tags, creation_date, unix_timestamp('2016-01-12 18:45:19') as cdate,view_count,title FROM (SELECT id,tags, creation_date,view_count,title,dense_rank() OVER (PARTITION BY tags ORDER BY view_count DESC) as rank  FROM posts_a) tmp where rank <=5",
     		  "faq_answered");
 
      
