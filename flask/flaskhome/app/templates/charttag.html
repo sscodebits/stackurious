@@ -1,0 +1,234 @@
+{% extends "base.html" %} <!--this means that you are extending the base tempate -->
+{% block tagid %} <!-- this is the name of the block below -->
+<table>
+ <tr><td>
+  <table>
+   <tr><td>&nbsp;</td>
+   <td>
+    <select id="tagByMonth">
+      <option value="2016_12" selected="true">2016 Dec</option>
+      <option value="2016_11">2016 Nov</option>
+      <option value="2016_10">2016 Oct</option>
+      <option value="2016_9">2016 Sep</option>
+      <option value="2016_8">2016 Aug</option>
+      <option value="2016_7">2016 Jul</option>
+      <option value="2016_6">2016 Jun</option>
+      <option value="2016_5">2016 May</option>
+      <option value="2016_4">2016 Apr</option>
+      <option value="2016_3">2016 Mar</option>
+      <option value="2016_2">2016 Feb</option>
+      <option value="2016_1">2016 Jan</option>
+    </select>
+   </td></tr>
+  <tr><td width="55%">
+    <div id="barChartTag" />
+  </td>
+  <td width="45%">
+     <div id="tagChartByMonth"></div>
+  </td>
+  </tr><table>
+ </td></tr>
+
+ <tr><td width="100%">
+<div class="panel panel-default" style="width:100%">
+  <div class="panel-heading">
+    <h3 class="panel-title">Frequently Asked Questions based on Selected Tag</h3>
+  </div>
+  <div class="panel-body">
+     <table width="100%">
+       <tr width="100%">
+          <td width="40%">
+          Please select tag below <div id="taglistinput"></div>
+          </td>
+          <td width="60%">
+          Experts <div class="well" id="expertlist"></div> 
+          </td>
+       </tr></table>
+  <table style="width:100%">
+     <tr>
+       <td width="50%" style="vertical-align:top">
+         <h4>Top Answered Questions</h4>
+         <ul class="list-group">
+     <div id="anslist"></div>
+          </ul>   
+       </td>
+       <td width="20px">&nbsp;</td>
+       <td width="50%" style="vertical-align:top">
+         <h4>Top Unanswered Questions</h4>
+          <ul class="list-group">
+     <div id="unanslist"></div>
+          </ul>
+       </td>
+     </tr>
+   </table>
+  </div>
+</div>
+
+</td></tr>
+</table>
+
+
+    <script type="text/javascript">
+      var barTagsvg = dimple.newSvg("#barChartTag", 500, 500);
+
+      createTagChart(barTagsvg, dimple.plot.bar, "/api/tags?count=10", "tags", "Top 10 Tags By Popularity");
+//      createChart(areasvg, dimple.plot.area)
+//      createChart(linesvg, dimple.plot.line)
+//      createChart(scattersvg, dimple.plot.bubble)
+
+      function createTagChart(svg, seriestype, url, dataKey, title) {
+        var myChart = new dimple.chart(svg, []);
+        d3.json(url, function (error,data) {
+          //myChart = new dimple.chart(svg, data[dataKey]);
+          myChart.data = data[dataKey];
+          myChart.setBounds(60, 30, 455, 355);
+          var x = myChart.addCategoryAxis("x", "name");
+          //x.addOrderRule("Date");
+          x.title = "Tag"
+          var y = myChart.addMeasureAxis("y", "count");
+          y.title = "Counts"
+          var s = myChart.addSeries(null, seriestype);
+          myChart.draw();
+          var c=myChart;
+ svg.append("text")
+   .attr("x", c._xPixels() + c._widthPixels() / 2)
+   .attr("y", c._yPixels() - 20)
+   .style("text-anchor", "middle")
+   .style("font-family", "sans-serif")
+   .style("font-weight", "bold")
+   .text(title);
+
+         });
+
+         return myChart;
+      }
+    </script>
+
+<script type="text/javascript">
+   // setup Tag Chart By Month
+      var tagChartByMonth = dimple.newSvg("#tagChartByMonth", 500, 500);
+      var dimpleChartByMonth = createTagChart(tagChartByMonth, dimple.plot.bar, "/api/tag/2016/12?count=10", "tags", "Top Tags For 2016 Dec");
+   
+   function loadTagChartByMonth(data) {
+         //dimpleChartByMonth.data = [];
+         //dimpleChartByMonth.setBounds(60, 30, 355, 355);
+         //dimpleChartByMonth.draw(1000);
+         //dimpleChartByMonth.data = data.tags;
+         //dimpleChartByMonth.draw(2000);
+         
+   }
+
+    $(document).ready(function () {      
+      $('#tagByMonth').on('change', function () {
+          //  alert($(this).val());
+          var dateStr = $(this).val();
+          var dateSplit = dateStr.split("_");
+          var year = Number(dateSplit[0]);
+          var month = Number(dateSplit[1]);
+
+       $('#tagChartByMonth').empty();
+      
+      var tagChartByMonth = dimple.newSvg("#tagChartByMonth", 500, 500);
+      var dimpleChartByMonth = createTagChart(tagChartByMonth, dimple.plot.bar, "/api/tag/" + year + "/" + month + "?count=10", "tags", "Top Tags For " + dateStr);
+          
+$.ajax({
+    url: '/api/tag/' + year + '/' + month,
+    success: function (data) {
+        loadTagChartByMonth(data);
+    }
+});
+      });
+     });
+
+
+    // setup Tag Selection for FAQ
+    $(document).ready(function () { 
+          //alert("before loadTag"); 
+          loadTagData('/api/tags', successLoadTags, failure);  
+      });  
+
+    function successLoadTags(data) {
+           //alert(data);
+           var items = data.tags;  
+             
+          var inputElement = '<select id="inputtag"> <option  value="">Select</option>';  
+               // Add all the new items  
+          for (var i = 0; i < items.length; i++) {  
+                 var itemVal = items[i].name;  
+                 inputElement += '<option value="' + itemVal + '">' + itemVal + '</option>';  
+          }  
+          inputElement += '</select>';  
+          $('#taglistinput').append(inputElement);  
+          // assign the change event to provide an alert of the selected option value  
+          $('#inputtag').on('change', function () {  
+              var tagname = $(this).val();
+
+              loadTagData("/api/tag/ans/"+ tagname +"?count=10", successLoadAns, failure);
+
+              loadTagData("/api/tag/uans/"+ tagname +"?count=10", successLoadUnans, failure);
+              loadTagData("/api/tag/experts/"+ tagname +"?count=10", successLoadExpert, failure);
+
+              //createTagChart(barFaqAsvg, dimple.plot.bar, "/api/tag/ans/"+ tagname + "?count=10", "faq");  
+              //createTagChart(barFaqUsvg, dimple.plot.bar, "/api/tag/uans/"+ tagname + "?count=10", "faq");  
+           });  
+
+    }
+
+      function successLoadAns(data) {
+             successLoadFaq(data, '#anslist');
+      }
+
+      function successLoadUnans(data) {
+             successLoadFaq(data, '#unanslist');
+      }
+
+      function successLoadExpert(data) {
+             var items = data.expert;
+             // Add all the new items
+          var listElement = '';
+          for (var i = 0; i < items.length; i++) {  
+             var itemVal = items[i].name;
+             if (listElement != '') { listElement += ", "; } 
+             listElement += itemVal;
+          }
+          //alert(listElement);
+          $('#expertlist').empty().append(listElement);
+      }
+
+      function successLoadFaq(data, divId) {
+
+         var items = data.faq;
+          // Add all the new items
+          var listElement = '';
+          for (var i = 0; i < items.length; i++) {  
+             var itemVal = items[i].name; 
+             var itemCount = items[i].count;   
+             listElement += '<li class="list-group-item">';
+             listElement += '   <span class="badge">' + itemCount + '</span>';
+             listElement += itemVal;
+             listElement += '</li>';
+          }
+
+          $(divId).empty().append(listElement);
+
+      }
+
+    function failure(data) {
+       alert("failure loading tags");
+    }
+
+    function loadTagData(tagurl, successLoad, failureLoad) {
+      $.ajax({  
+            url: tagurl,
+            success: function (data) {  
+                successLoad(data);  
+            },  
+            error: function (data) {  
+                failureLoad(data);  
+            }  
+        });              
+
+    }
+
+  </script>
+{% endblock %}

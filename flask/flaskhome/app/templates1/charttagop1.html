@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block tagop %}
+<div class="container">
+     <div class="starter-template">
+       <div class="row" style="height:100vh;">
+               <div class="col-md-10 col-md-offset-1">
+                   <table class="table">
+                     <thead>
+                       <tr>
+                         <th>id</th>
+                         <th>tag</th>
+                         <th>count</th>
+                       </tr>
+                     </thead>
+                     <tbody>
+                       {% for val in output %}
+                       <tr>
+                         <td>{{val.id}}</td>
+                         <td>{{val.tagname}}</td>
+                         <td>{{val.count}}</td>
+                       </tr>
+                       {% endfor %}
+                     </tbody>
+                   </table>
+               </div>
+
+
+<!--  <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+  <div id="chart_div"  style="width: 900px; height: 300px;"><div>
+ 
+ 
+<script type='text/javascript'>//<![CDATA[ 
+ 
+google.load('visualization', '1', {packages: ['corechart', 'bar']});
+google.setOnLoadCallback(drawBasic);
+ 
+function drawBasic() {
+ 
+      var data = google.visualization.arrayToDataTable([
+        ['Currency', 'Rate', { role: 'style' }],
+        ['USD', {{rates[0]}}, 'gold'],
+        ['GBP', {{rates[1]}}, 'silver'],
+        ['HKD', {{rates[2]}}, 'brown'],
+        ['AUD', {{rates[3]}}, 'blue']
+      ]);
+ 
+      var options = {
+        title: 'Exchange rate overview',
+        chartArea: {width: '50%'},
+        hAxis: {
+          title: '',
+          minValue: 0
+        },
+        vAxis: {
+          title: ''
+        }
+      };
+ 
+      var chart = new google.visualization.BarChart(document.getElementById('chart_div'));
+ 
+      chart.draw(data, options);
+    }
+//]]>  
+ 
+</script>
+--->
+
+       </div>
+     </div>
+   </div>
+{% endblock %}
