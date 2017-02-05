@@ -23,7 +23,7 @@ import com.shikha.stackoverflow.util.ParseUtil;
  * @author shikha
  *
  */
-public class SparkIngestion {
+public class BatchIngestion {
 	public static void main(String[] args) {
     	String inputFile, output;
         if (args.length == 2) {

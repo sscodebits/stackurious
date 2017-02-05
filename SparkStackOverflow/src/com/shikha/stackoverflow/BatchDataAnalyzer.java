@@ -18,12 +18,14 @@ import org.apache.spark.sql.SparkSession;
 
 //http://spark.apache.org/docs/latest/sql-programming-guide.html
 
-public class SparkDataAnalyzer {
+public class BatchDataAnalyzer {
 	public static void main(String[] args) {
-    	String inputFile, output;
-        if (args.length == 2) {
+    	String inputFile, output=null;
+        if (args.length >= 1) {
         	inputFile = args[0];
-            output = args[1];
+        	if (args.length >= 2) {
+        		output = args[1];
+        	}
         } else {
             System.err.println("Expected: input output");
             return;
@@ -85,7 +87,7 @@ public class SparkDataAnalyzer {
       System.out.println("############################## questions " +questions.count() + " answer " + answeredPosts.count());
       // store top 10 answered questions per tag
       storeResults(spark, answeredPosts, output, "posts_a",
-    		  "SELECT id,tags, creation_date, unix_timestamp('2016-01-12 18:45:19') as cdate,view_count,title FROM (SELECT id,tags, creation_date,view_count,title,dense_rank() OVER (PARTITION BY tags ORDER BY view_count DESC) as rank  FROM posts_a) tmp where rank <=5",
+    		  "SELECT id,tags, creation_date, unix_timestamp(creation_date) as cdate,view_count,title FROM (SELECT id,tags, creation_date,view_count,title,dense_rank() OVER (PARTITION BY tags ORDER BY view_count DESC) as rank  FROM posts_a) tmp where rank <=5",
     		  "faq_answered");
 
      
@@ -156,7 +158,7 @@ public class SparkDataAnalyzer {
 	        Dataset<Row> tagCounts = spark.sql(query);
 	 
 	        tagCounts.show();
-	        tagCounts.javaRDD().saveAsTextFile(outFile + "/" +  type);
+	        //tagCounts.javaRDD().saveAsTextFile(outFile + "/" +  type);
 	        tagCounts
 	          .write()
 	          .format("org.apache.spark.sql.cassandra")
