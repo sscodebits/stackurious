@@ -1,0 +1,60 @@
+
+{% extends "charttag.html" %} <!--this means that you are extending the base tempate -->
+{% block taglive %} <!-- this is the name of the block below -->
+
+
+<div class="panel panel-default">
+  <!-- Default panel contents -->
+  <div class="panel-heading">Live Questions Stream</div>
+
+  <!-- Table -->
+  <div id="liveq"></div>
+
+  <div class="panel-footer" id="liveqdate"></div>
+</div>
+
+<br/>
+<br/>
+<br/>
+
+<script>
+
+    // setup data for List Questions
+    $(document).ready(function () { 
+          loadLiveData();
+      });  
+
+
+     function loadLiveData() {
+          loadTagData('/api/live/posts/experts?count=10', successLoadLivePost, failure);  
+     }
+
+     function successLoadLivePost(data) {
+          //alert(data);
+          tabledata = '  <table class="table">';
+          tabledata += '<thead><tr> <th>Post Id</th> <th>Post Date</th> <th>Title</th> <th>Tags</th> <th>Experts</th> </tr></thead>'
+
+          jsondata = data.posts;
+          for (var i = 0; i < jsondata.length; i++) { 
+            tabledata += "<tr scope=row>";
+            tabledata +=   "<td>" + jsondata[i].id + "</td>";
+            tabledata +=   "<td>" + jsondata[i].creation_date + "</td>";            
+            tabledata +=   "<td>" + jsondata[i].title + "</td>";
+            tabledata +=   "<td>" + jsondata[i].tags + "</td>";
+            tabledata +=   "<td>" + jsondata[i].experts + "</td>";
+            tabledata += "</tr>";
+          }
+          
+          //tabledata += rowdata;
+          tabledata += '  </table>';
+
+          $('#liveq').empty().append(tabledata);
+          var date = new Date();
+          $('#liveqdate').empty().append('Refreshed at ' + date.toLocaleString());
+
+          setTimeout(loadLiveData, 2000);
+     }
+
+</script>
+
+{% endblock %}

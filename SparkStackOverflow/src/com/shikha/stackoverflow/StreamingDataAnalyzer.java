@@ -36,7 +36,7 @@ public final class StreamingDataAnalyzer {
     	
         SparkConf conf = new SparkConf().setAppName("Streaming Posts Handler").setMaster("spark://ip-172-31-2-73:7077");
         JavaSparkContext sc = new JavaSparkContext(conf);
-        JavaStreamingContext ssc = new JavaStreamingContext(sc, Durations.seconds(1));
+        JavaStreamingContext ssc = new JavaStreamingContext(sc, Durations.seconds(5));
        
        
        Set<String> topicsSet = Collections.singleton("connect-posts");
@@ -44,6 +44,23 @@ public final class StreamingDataAnalyzer {
        kafkaParams.put("metadata.broker.list", "ip-172-31-2-73:9092,ip-172-31-2-70:9092,ip-172-31-2-77:9092,ip-172-31-2-75:9092");
        //kafkaParams.put("auto.offset.reset", "smallest");
        
+       
+       SparkSession spark = JavaSparkSessionSingleton.getInstance(conf);
+    	  // load the experts from Cassandra
+ 	  Dataset<Row> expertsDF = spark.read()
+ 	        .format("org.apache.spark.sql.cassandra")
+ 	        .options(new HashMap<String, String>() {
+ 	            {
+ 	                put("keyspace", "stackoverflow");
+ 	                put("table", "tag_experts");
+ 	            }
+ 	        })
+ 	        .load();
+ 	  //expertsDF.show();
+ 	  expertsDF.createOrReplaceTempView("EXPERTS");
+ 	  // Cache EXPERTS in memory
+ 	  expertsDF.cache();
+ 	  
        JavaPairInputDStream<String, String> directKafkaStream =
   		     KafkaUtils.createDirectStream(ssc,
   		    	  String.class,
@@ -52,11 +69,7 @@ public final class StreamingDataAnalyzer {
   		          StringDecoder.class,
   		         kafkaParams, topicsSet);
        
-       System.out.println("************************************ Start Processing ****");
-       System.out.println(topicsSet);
-       System.out.println(kafkaParams);
-       directKafkaStream.print();
-       
+
        // parse the input stream and create Post object
        JavaDStream<StreamPost> postStream =  directKafkaStream.map(new Function<Tuple2<String, String>, StreamPost>() {
     	      @Override
@@ -64,14 +77,6 @@ public final class StreamingDataAnalyzer {
     	        return StreamPost.parseString(tuple2._2());
     	      }
     	    });
-       /*
-        * JavaDStream<String> words = lines.flatMap(new FlatMapFunction<String, String>() {
-      @Override
-      public Iterator<String> call(String x) {
-        return Arrays.asList(SPACE.split(x)).iterator();
-      }
-    });
-        */
 
        // process the postStream DStream
        postStream.foreachRDD(new VoidFunction2<JavaRDD<StreamPost>, Time>() {
@@ -82,30 +87,21 @@ public final class StreamingDataAnalyzer {
      	    	  storeResults(spark, postDF, 
     	    			  "POSTS", "SELECT date_format(creation_date, 'yyyy.MM.dd') as group_day, id, creation_date, title, post_type_id, accepted_answer_id, parent_id, tags from POSTS",
     	    			  "live_posts_by_day");
-     	    	       	    	  
-    	    	  
-       	    	  // load the experts from Cassandra
-    	    	  Dataset<Row> expertsDF = spark.read()
-    	    	        .format("org.apache.spark.sql.cassandra")
-    	    	        .options(new HashMap<String, String>() {
-    	    	            {
-    	    	                put("keyspace", "stackoverflow");
-    	    	                put("table", "tag_experts");
-    	    	            }
-    	    	        })
-    	    	        .load();
-    	    	  //expertsDF.show();
-    	    	  expertsDF.createOrReplaceTempView("EXPERTS");
+
     	    	  
     	    	  // filter to get all the questions
     	    	  Dataset<Row> questions = spark.sql("SELECT * FROM POSTS WHERE post_type_id = '1'");
-    	    	  questions.show();
+    	    	  //questions.show();
     	    	  //questions.createOrReplaceTempView("Questions");
-    	    	  storeResults(spark, questions,
+    	    	  Dataset<Row> post_experts = storeResults(spark, questions,
     	    			  "QUESTIONS", "SELECT date_format(creation_date, 'yyyy.MM.dd HH') as group_hour, id, creation_date, title, tags, e.expert_name as experts from QUESTIONS q JOIN (SELECT * From EXPERTS) e ON q.tags = e.tag",
     	    			  "live_posts_experts_by_hour");
 
-    	    	  
+    	    	 // if (post_experts.count() > 0) {
+    	    		  storeResults(spark, post_experts,
+    	    				  "POSTS_EXPERTS", "SELECT 'live_posts_experts_by_hour' as table_name, group_hour as group_val FROM POSTS_EXPERTS ",
+    	    				  "posts_data");
+    	    	 // }
     	    	  
     	    	  
     	    	  //spark.sql("SELECT id,  from POST_EXPERT GROUP BY id");
@@ -178,11 +174,11 @@ public final class StreamingDataAnalyzer {
 	  * @param query
 	  * @param table
 	  */
-	 static void storeResults(SparkSession spark, Dataset<Row> tagDF, String type, String query, final String table) {
+	 static Dataset<Row> storeResults(SparkSession spark, Dataset<Row> tagDF, String type, String query, final String table) {
 		 tagDF.createOrReplaceTempView(type);
 	        Dataset<Row> tagCounts = spark.sql(query);
 	 
-	        tagCounts.show();
+	        //tagCounts.show();
 	        //tagCounts.javaRDD().saveAsTextFile(outFile + "/" +  type);
 	        tagCounts
 	          .write()
@@ -193,5 +189,7 @@ public final class StreamingDataAnalyzer {
 	        		  put("table", table);
 	        	  }
 	          }).mode(SaveMode.Append).save();
+	        
+	        return tagCounts;
 	 }
 }

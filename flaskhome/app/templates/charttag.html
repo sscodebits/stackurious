@@ -64,7 +64,9 @@
   </div>
 </div>
 
+
 </td></tr>
+
 </table>
 
 
@@ -72,9 +74,6 @@
       var barTagsvg = dimple.newSvg("#barChartTag", 500, 500);
 
       createTagChart(barTagsvg, dimple.plot.bar, "/api/tags?count=10", "tags", "Top 10 Tags By Popularity");
-//      createChart(areasvg, dimple.plot.area)
-//      createChart(linesvg, dimple.plot.line)
-//      createChart(scattersvg, dimple.plot.bubble)
 
       function createTagChart(svg, seriestype, url, dataKey, title) {
         var myChart = new dimple.chart(svg, []);
@@ -109,15 +108,6 @@
       var tagChartByMonth = dimple.newSvg("#tagChartByMonth", 500, 500);
       var dimpleChartByMonth = createTagChart(tagChartByMonth, dimple.plot.bar, "/api/tag/2016/12?count=10", "tags", "Top Tags For 2016 Dec");
    
-   function loadTagChartByMonth(data) {
-         //dimpleChartByMonth.data = [];
-         //dimpleChartByMonth.setBounds(60, 30, 355, 355);
-         //dimpleChartByMonth.draw(1000);
-         //dimpleChartByMonth.data = data.tags;
-         //dimpleChartByMonth.draw(2000);
-         
-   }
-
     $(document).ready(function () {      
       $('#tagByMonth').on('change', function () {
           //  alert($(this).val());
@@ -131,12 +121,6 @@
       var tagChartByMonth = dimple.newSvg("#tagChartByMonth", 500, 500);
       var dimpleChartByMonth = createTagChart(tagChartByMonth, dimple.plot.bar, "/api/tag/" + year + "/" + month + "?count=10", "tags", "Top Tags For " + dateStr);
           
-$.ajax({
-    url: '/api/tag/' + year + '/' + month,
-    success: function (data) {
-        loadTagChartByMonth(data);
-    }
-});
       });
      });
 
@@ -231,4 +215,12 @@ $.ajax({
     }
 
   </script>
+
+  <script>
+
+     
+
+  </script>
+
+
 {% endblock %}

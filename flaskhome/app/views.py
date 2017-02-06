@@ -2,6 +2,7 @@
 from flask import jsonify, request
 from flask import render_template
 from app import app
+from datetime import datetime
 import urllib2
 import json
 
@@ -87,6 +88,19 @@ def get_all_tags():
        jsonresponse = [{"id": x.id, "name": x.name, "count": x.count} for x in response_list]
        return jsonify(tags=jsonresponse)
 
+@app.route('/api/live/posts/experts')
+def get_live_post_experts():
+       #hourval = datetime.now().strftime('%Y.%m.%d %H')
+       #hourval = '2017.02.05 20'
+       stmt = "SELECT group_val from posts_data where table_name = 'live_posts_experts_by_hour' LIMIT 1"
+       response = session.execute(stmt, parameters=[])
+       for val in response:
+          hourval = val.group_val
+       stmt = 'SELECT * FROM live_posts_experts_by_hour WHERE group_hour =' + "'" + hourval + "'"
+       response_list = get_data(stmt, [])
+       jsonresponse = [{"id": x.id, "creation_date": x.creation_date, "title": x.title, "experts": x.experts, "tags": x.tags} for x in response_list]
+       return jsonify(posts=jsonresponse)
+
 
 
 @app.route('/tags')
@@ -97,18 +111,7 @@ def tag():
 def chart_tag():
  return render_template("charttag.html")
 
-@app.route("/chart/tag", methods=['POST'])
-def chart_tag_post():
-   tagid = request.form["tagid"]
+@app.route('/chart/taglive')
+def chart_taglive():
+ return render_template("charttaglive.html")
 
-   #email entered is in emailid and date selected in dropdown is in date variable respectively
-   if not tagid:
-      jsonresponse=get_all_tags()
-   else:
-      jsonresponse=get_tags(tagid)
-
-   jsonlist=jsonresponse
-   jsonlist=[]
-#   jsonlist=json.load(jsonresponse)
-#   print jsonlist
-   return render_template("charttagop.html", output=jsonlist)
