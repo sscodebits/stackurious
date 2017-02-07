@@ -1,6 +1,7 @@
 
 drop table live_posts_by_day;
 drop table live_posts_experts_by_hour;
+drop table live_tag_counts;
 #cassandra tables
 drop table tag_counts;
 drop table tag_counts_by_month;
@@ -28,12 +29,15 @@ CREATE TABLE tag_experts (tag text, expert_id text, expert_name text, ans_count 
 
 
 CREATE TABLE live_posts_by_day (group_day text, id text, creation_date timestamp, post_type_id text, accepted_answer_id text, parent_id text, title text, tags text, 
-    PRIMARY KEY ((group_day), creation_date)) WITH CLUSTERING ORDER BY (creation_date DESC);
+    PRIMARY KEY ((group_day), creation_date, id)) WITH CLUSTERING ORDER BY (creation_date DESC, id DESC);
 
 CREATE TABLE live_posts_experts_by_hour (group_hour text, id text, creation_date timestamp, title text, tags text, experts text,
-    PRIMARY KEY ((group_hour), creation_date)) WITH CLUSTERING ORDER BY (creation_date DESC);
+    PRIMARY KEY ((group_hour), creation_date, id)) WITH CLUSTERING ORDER BY (creation_date DESC, id DESC);
 
 create table posts_data (table_name text, group_val text,
   primary key ((table_name), group_val)) with clustering order by (group_val desc);
 
+
+CREATE TABLE live_tag_counts (rundate timestamp, id text, name text, count int,   
+    PRIMARY KEY ((rundate), count)) WITH CLUSTERING ORDER BY (count DESC);
 

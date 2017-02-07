@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.Dataset;
@@ -15,29 +16,37 @@ import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.streaming.kafka.*;
 
-import com.datastax.spark.connector.japi.rdd.CassandraJavaRDD;
 import com.shikha.stackoverflow.common.StreamPost;
+import com.shikha.stackoverflow.common.StreamTag;
 
 import kafka.serializer.StringDecoder;
 import scala.Tuple2;
 import scala.Tuple3;
 
 import org.apache.spark.streaming.Time;
-
+import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.*;
 import org.apache.spark.api.java.function.*;
-import static com.datastax.spark.connector.japi.CassandraJavaUtil.*;
-
 
 
 public final class StreamingDataAnalyzer {
 	public static void main(String[] args) throws Exception {
-    	
+		int batchDuration = 5;
+		int slidingDuration = 10;
+		int windowDuration = 20;
+		
+		if (args.length >= 3) {
+			batchDuration = Integer.parseInt(args[0]);
+			slidingDuration = Integer.parseInt(args[1]);
+			windowDuration = Integer.parseInt(args[2]);
+		}
+		
 		//Setting streaming spark context
         SparkConf conf = new SparkConf().setAppName("Streaming Posts Handler").setMaster("spark://ip-172-31-2-73:7077");
         JavaSparkContext sc = new JavaSparkContext(conf);
-        JavaStreamingContext ssc = new JavaStreamingContext(sc, Durations.seconds(5));
+        sc.setCheckpointDir("hdfs://ec2-35-167-57-182.us-west-2.compute.amazonaws.com:9000/rddcheckpoint");
+        JavaStreamingContext ssc = new JavaStreamingContext(sc, Durations.seconds(batchDuration));
        
        //Creating Kafka parameters
        Set<String> topicsSet = Collections.singleton("connect-posts");
@@ -79,23 +88,58 @@ public final class StreamingDataAnalyzer {
     	        return StreamPost.parseString(tuple2._2());
     	      }
     	    });
-
-       // process the postStream DStream
+ 
+       // store the postStream DStream
        postStream.foreachRDD(new VoidFunction2<JavaRDD<StreamPost>, Time>() {
     	      @Override
     	      public void call(JavaRDD<StreamPost> rdd, Time time) {
     	    	  SparkSession spark = JavaSparkSessionSingleton.getInstance(rdd.context().getConf());
     	    	  Dataset<Row> postDF =	spark.createDataFrame(rdd, StreamPost.class);
-    	    	  
+    	    	      	    	  
     	    	  //Store incoming Post in the live_posts_by_day table in cassandra with group_day as partition key
      	    	  storeResults(spark, postDF, 
     	    			  "POSTS", 
     	    			  "SELECT date_format(creation_date, 'yyyy.MM.dd') as group_day, id, creation_date, title, post_type_id, accepted_answer_id, parent_id, tags from POSTS",
     	    			  "live_posts_by_day");
+    	      }
+       });
 
-    	    	  
-    	    	  // filter posts to get all the questions
-    	    	  Dataset<Row> questions = spark.sql("SELECT * FROM POSTS WHERE post_type_id = '1'");
+  	   // filter posts to get all the questions
+       JavaDStream<StreamPost> questions = postStream.filter(filterQuestions);
+       
+       // Map to Tag, count Pair
+       //https://github.com/apache/spark/blob/master/examples/src/main/java/org/apache/spark/examples/streaming/JavaDirectKafkaWordCount.java
+       JavaPairDStream<String, Integer> streamTags = questions.mapToPair(new PairFunction<StreamPost, String, Integer>() {
+           @Override
+           public Tuple2<String, Integer> call(StreamPost p) {
+             return new Tuple2<>(p.getTags(), 1);
+           }
+       });
+       
+       
+	   JavaPairDStream<String, Integer> windowTagCount = streamTags.reduceByKeyAndWindow(reduceTagFunc, invReduceTagFunc, 
+			                        Durations.seconds(windowDuration), Durations.seconds(slidingDuration));
+	   JavaDStream<StreamTag> windowTagStream = windowTagCount.map(new Function<Tuple2<String, Integer>, StreamTag>() {
+ 	      @Override
+ 	      public StreamTag call(Tuple2<String, Integer> tuple2) {
+ 	        return StreamTag.parseTag(tuple2._1(), tuple2._2());
+ 	      }
+ 	    });
+	   windowTagStream.foreachRDD(new VoidFunction2<JavaRDD<StreamTag>, Time>() {
+    	      @Override
+    	      public void call(JavaRDD<StreamTag> rdd, Time time) {
+    	    	  SparkSession spark = JavaSparkSessionSingleton.getInstance(rdd.context().getConf());
+                  Dataset<Row> tag = spark.createDataFrame(rdd, StreamTag.class);
+                  storeResults(spark, tag, "live_tag_counts", SaveMode.Overwrite);
+    	      }
+       });
+     	    	  
+       // process the postStream DStream
+       questions.foreachRDD(new VoidFunction2<JavaRDD<StreamPost>, Time>() {
+    	      @Override
+    	      public void call(JavaRDD<StreamPost> rdd, Time time) {
+    	    	  SparkSession spark = JavaSparkSessionSingleton.getInstance(rdd.context().getConf());
+    	    	  Dataset<Row> questions = spark.createDataFrame(rdd, StreamPost.class);
     	    	  //questions.show();
     	    	  //questions.createOrReplaceTempView("Questions");
     	    	  
@@ -149,6 +193,27 @@ public final class StreamingDataAnalyzer {
        ssc.awaitTermination();
 	}
 	
+	static Function2<Integer, Integer, Integer> reduceTagFunc = new Function2<Integer, Integer, Integer> () {
+		@Override
+		public Integer call(Integer arg0, Integer arg1) throws Exception {
+			return arg0+arg1;
+		}
+       };
+       
+    static Function2<Integer, Integer, Integer> invReduceTagFunc = new Function2<Integer, Integer, Integer> () {
+   		@Override
+   		public Integer call(Integer arg0, Integer arg1) throws Exception {
+   			return arg0-arg1;
+   		}
+          };
+          
+	static Function<StreamPost, Boolean> filterQuestions = new Function<StreamPost, Boolean>() {
+		@Override
+		public Boolean call(StreamPost arg0) throws Exception {
+			return "1".equals(arg0.getPost_type_id());
+		}
+       };
+	
 	//https://github.com/apache/spark/blob/master/examples/src/main/java/org/apache/spark/examples/streaming/JavaSqlNetworkWordCount.java
 	/** Lazily instantiated singleton instance of SparkSession */
 	static class JavaSparkSessionSingleton {
@@ -174,14 +239,20 @@ public final class StreamingDataAnalyzer {
 	  * @param query
 	  * @param table
 	  */
-	 static Dataset<Row> storeResults(SparkSession spark, Dataset<Row> tagDF, String type, String query, final String table) {
+	 static Dataset<Row> storeResults(SparkSession spark, Dataset<Row> tagDF, 
+			 String type, String query, final String table) {
 		 
+		 Dataset<Row> tagCounts = null;
+		 
+		 if (query != null) {
 		 	//create a temp table view
 		 	tagDF.createOrReplaceTempView(type);
 		 	
 		 	//Execute the query
-	        Dataset<Row> tagCounts = spark.sql(query);
-	 
+	        tagCounts = spark.sql(query);
+		 } else {
+			 tagCounts = tagDF;
+		 }
 	        //tagCounts.show();
 	        //tagCounts.javaRDD().saveAsTextFile(outFile + "/" +  type);
 	        
@@ -197,5 +268,20 @@ public final class StreamingDataAnalyzer {
 	          }).mode(SaveMode.Append).save();
 	        
 	        return tagCounts;
+	 }
+
+	 static Dataset<Row> storeResults(SparkSession spark, Dataset<Row> tagDF, 
+			                         final String table, SaveMode savemode) {
+		//Save to database
+		 tagDF
+	          .write()
+	          .format("org.apache.spark.sql.cassandra")
+	          .options(new HashMap<String, String> () {
+	        	  {
+	        		  put("keyspace", "stackoverflow");
+	        		  put("table", table);
+	        	  }
+	          }).mode(savemode).save();
+	     return tagDF;      
 	 }
 }

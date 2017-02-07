@@ -1,6 +1,5 @@
 package com.shikha.stackoverflow.common;
 
-import org.w3c.dom.Element;
 
 public class StreamPost {
 	String id=null;
