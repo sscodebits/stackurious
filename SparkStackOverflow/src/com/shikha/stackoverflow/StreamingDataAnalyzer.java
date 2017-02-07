@@ -1,11 +1,16 @@
 package com.shikha.stackoverflow;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -24,38 +29,62 @@ import scala.Tuple2;
 import scala.Tuple3;
 
 import org.apache.spark.streaming.Time;
-import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.*;
 import org.apache.spark.api.java.function.*;
 
 
 public final class StreamingDataAnalyzer {
+	public static Properties loadProps(JavaSparkContext ctx, String propsFile) throws IOException {
+		InputStream inputStream;
+		Path pt = new Path(propsFile);
+		FileSystem fs = FileSystem.get(ctx.hadoopConfiguration());
+		inputStream = fs.open(pt);
+		
+		Properties properties = new Properties();
+		properties.load(inputStream);
+		
+		for (Object key : properties.keySet()) {
+			System.out.println("Prop " + (String) key + " " + (String) properties.get(key));
+		}
+		return properties;
+	}
+	
+	
 	public static void main(String[] args) throws Exception {
 		int batchDuration = 5;
 		int slidingDuration = 10;
 		int windowDuration = 20;
 		
-		if (args.length >= 3) {
-			batchDuration = Integer.parseInt(args[0]);
-			slidingDuration = Integer.parseInt(args[1]);
-			windowDuration = Integer.parseInt(args[2]);
+		//Setting streaming spark context
+        SparkConf conf = new SparkConf().setAppName("Streaming Posts Handler");
+        JavaSparkContext sc = new JavaSparkContext(conf);
+        Properties props = null;
+
+		if (args.length >= 1) {
+	      props = loadProps(sc, args[0]);
+	  	      
+		  if (args.length >= 4) {
+			batchDuration = Integer.parseInt(args[1]);
+			slidingDuration = Integer.parseInt(args[2]);
+			windowDuration = Integer.parseInt(args[3]);
+		  }
+		} else {
+			System.err.println("Expected: kafkaTopic ");
+            return;
 		}
 		
-		//Setting streaming spark context
-        SparkConf conf = new SparkConf().setAppName("Streaming Posts Handler").setMaster("spark://ip-172-31-2-73:7077");
-        JavaSparkContext sc = new JavaSparkContext(conf);
-        sc.setCheckpointDir("hdfs://ec2-35-167-57-182.us-west-2.compute.amazonaws.com:9000/rddcheckpoint");
+        sc.setCheckpointDir(props.getProperty("spark.checkpointdir"));
         JavaStreamingContext ssc = new JavaStreamingContext(sc, Durations.seconds(batchDuration));
        
        //Creating Kafka parameters
-       Set<String> topicsSet = Collections.singleton("connect-posts");
+       Set<String> topicsSet = Collections.singleton(props.getProperty("kafkaTopic"));
        Map<String, String> kafkaParams = new HashMap<String, String>();
-       kafkaParams.put("metadata.broker.list", "ip-172-31-2-73:9092,ip-172-31-2-70:9092,ip-172-31-2-77:9092,ip-172-31-2-75:9092");
-       //kafkaParams.put("auto.offset.reset", "smallest");
+       //kafkaParams.put("metadata.broker.list", "ip-172-31-2-73:9092,ip-172-31-2-70:9092,ip-172-31-2-77:9092,ip-172-31-2-75:9092");
+       kafkaParams.put("metadata.broker.list", props.getProperty("metadata.broker.list"));
        
        //creating spark session object from spark conf for caching experts
-       SparkSession spark = JavaSparkSessionSingleton.getInstance(conf);
+       SparkSession spark = JavaSparkSessionSingleton.getInstance(conf, props.getProperty("spark.cassandra.connection.host"));
     	  // load the experts from Cassandra
  	   Dataset<Row> expertsDF = spark.read()
  	        .format("org.apache.spark.sql.cassandra")
@@ -93,7 +122,7 @@ public final class StreamingDataAnalyzer {
        postStream.foreachRDD(new VoidFunction2<JavaRDD<StreamPost>, Time>() {
     	      @Override
     	      public void call(JavaRDD<StreamPost> rdd, Time time) {
-    	    	  SparkSession spark = JavaSparkSessionSingleton.getInstance(rdd.context().getConf());
+    	    	  SparkSession spark = JavaSparkSessionSingleton.getInstance(rdd.context().getConf(), null);
     	    	  Dataset<Row> postDF =	spark.createDataFrame(rdd, StreamPost.class);
     	    	      	    	  
     	    	  //Store incoming Post in the live_posts_by_day table in cassandra with group_day as partition key
@@ -116,7 +145,8 @@ public final class StreamingDataAnalyzer {
            }
        });
        
-       
+       // Use reduceFunc and inverseReduceFunc capability for best performance
+       // http://spark.apache.org/docs/latest/streaming-programming-guide.html#transformations-on-dstreams - Window Operations
 	   JavaPairDStream<String, Integer> windowTagCount = streamTags.reduceByKeyAndWindow(reduceTagFunc, invReduceTagFunc, 
 			                        Durations.seconds(windowDuration), Durations.seconds(slidingDuration));
 	   JavaDStream<StreamTag> windowTagStream = windowTagCount.map(new Function<Tuple2<String, Integer>, StreamTag>() {
@@ -128,7 +158,7 @@ public final class StreamingDataAnalyzer {
 	   windowTagStream.foreachRDD(new VoidFunction2<JavaRDD<StreamTag>, Time>() {
     	      @Override
     	      public void call(JavaRDD<StreamTag> rdd, Time time) {
-    	    	  SparkSession spark = JavaSparkSessionSingleton.getInstance(rdd.context().getConf());
+    	    	  SparkSession spark = JavaSparkSessionSingleton.getInstance(rdd.context().getConf(), null);
                   Dataset<Row> tag = spark.createDataFrame(rdd, StreamTag.class);
                   storeResults(spark, tag, "live_tag_counts", SaveMode.Overwrite);
     	      }
@@ -138,7 +168,7 @@ public final class StreamingDataAnalyzer {
        questions.foreachRDD(new VoidFunction2<JavaRDD<StreamPost>, Time>() {
     	      @Override
     	      public void call(JavaRDD<StreamPost> rdd, Time time) {
-    	    	  SparkSession spark = JavaSparkSessionSingleton.getInstance(rdd.context().getConf());
+    	    	  SparkSession spark = JavaSparkSessionSingleton.getInstance(rdd.context().getConf(), null);
     	    	  Dataset<Row> questions = spark.createDataFrame(rdd, StreamPost.class);
     	    	  //questions.show();
     	    	  //questions.createOrReplaceTempView("Questions");
@@ -193,13 +223,14 @@ public final class StreamingDataAnalyzer {
        ssc.awaitTermination();
 	}
 	
+	// adding tag counts
 	static Function2<Integer, Integer, Integer> reduceTagFunc = new Function2<Integer, Integer, Integer> () {
 		@Override
 		public Integer call(Integer arg0, Integer arg1) throws Exception {
 			return arg0+arg1;
 		}
        };
-       
+    // subtracting tag counts
     static Function2<Integer, Integer, Integer> invReduceTagFunc = new Function2<Integer, Integer, Integer> () {
    		@Override
    		public Integer call(Integer arg0, Integer arg1) throws Exception {
@@ -218,12 +249,12 @@ public final class StreamingDataAnalyzer {
 	/** Lazily instantiated singleton instance of SparkSession */
 	static class JavaSparkSessionSingleton {
 	  private static transient SparkSession instance = null;
-	  public static SparkSession getInstance(SparkConf sparkConf) {
+	  public static SparkSession getInstance(SparkConf sparkConf, String cassandraHost) {
 	    if (instance == null) {
 	      instance = SparkSession
 	        .builder()
 	        .config(sparkConf)
-	        .config("spark.cassandra.connection.host", "ip-172-31-2-74")//ToDo need to add all nodes for cassandra
+	        .config("spark.cassandra.connection.host", cassandraHost)
 	        .getOrCreate();
 	    }
 	    return instance;

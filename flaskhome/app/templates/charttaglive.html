@@ -2,6 +2,9 @@
 {% extends "charttag.html" %} <!--this means that you are extending the base tempate -->
 {% block taglive %} <!-- this is the name of the block below -->
 
+<div class="panel panel-default">
+<div id="barLiveTag"/>
+</div>
 
 <div class="panel panel-default">
   <!-- Default panel contents -->
@@ -27,6 +30,7 @@
 
      function loadLiveData() {
           loadTagData('/api/live/posts/experts?count=10', successLoadLivePost, failure);  
+          loadLiveTag();
      }
 
      function successLoadLivePost(data) {
@@ -53,6 +57,15 @@
           $('#liveqdate').empty().append('Refreshed at ' + date.toLocaleString());
 
           setTimeout(loadLiveData, 2000);
+     }
+
+     function loadLiveTag() {
+          $('#barLiveTag').empty();
+
+        // setup live tag chart
+        var liveTagChart = dimple.newSvg("#barLiveTag", 500, 500);
+        var dimpleliveTagChart = createTagChart(liveTagChart, dimple.plot.bubble, "/api/livetags?count=10", "tags", "Top Live Tags over Sliding Window");
+ 
      }
 
 </script>

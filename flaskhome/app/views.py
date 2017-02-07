@@ -88,6 +88,13 @@ def get_all_tags():
        jsonresponse = [{"id": x.id, "name": x.name, "count": x.count} for x in response_list]
        return jsonify(tags=jsonresponse)
 
+@app.route('/api/livetags')
+def get_live_tags():
+       stmt = 'SELECT * FROM live_tag_counts'
+       response_list = get_data(stmt, [])
+       jsonresponse = [{"name": x.name, "count": x.count} for x in response_list]
+       return jsonify(tags=jsonresponse)
+
 @app.route('/api/live/posts/experts')
 def get_live_post_experts():
        #hourval = datetime.now().strftime('%Y.%m.%d %H')

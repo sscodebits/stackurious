@@ -20,22 +20,23 @@ import org.apache.spark.sql.SparkSession;
 
 public class BatchDataAnalyzer {
 	public static void main(String[] args) {
-    	String inputFile, output=null;
-        if (args.length >= 1) {
-        	inputFile = args[0];
-        	if (args.length >= 2) {
-        		output = args[1];
+    	String inputFile, output=null, cassandraHost=null;
+        if (args.length >= 2) {
+        	cassandraHost = args[0];
+        	inputFile = args[1];
+        	if (args.length >= 3) {
+        		output = args[2];
         	}
         } else {
-            System.err.println("Expected: input output");
+            System.err.println("Expected: cassandraHost input output");
             return;
         }        
     
         SparkSession spark = new SparkSession
     		.Builder()
     		.appName("Posts Handler")
-    		.config("spark.cassandra.connection.host", "ip-172-31-2-74")
-       		.master("spark://ip-172-31-2-73:7077").getOrCreate();
+    		.config("spark.cassandra.connection.host", cassandraHost)
+       		.getOrCreate();
     
 
         processData(spark, inputFile, output, "tags", 
@@ -89,8 +90,6 @@ public class BatchDataAnalyzer {
       storeResults(spark, answeredPosts, output, "posts_a",
     		  "SELECT id,tags, creation_date, unix_timestamp(creation_date) as cdate,view_count,title FROM (SELECT id,tags, creation_date,view_count,title,dense_rank() OVER (PARTITION BY tags ORDER BY view_count DESC) as rank  FROM posts_a) tmp where rank <=5",
     		  "faq_answered");
-
-     
 
       // expert
       //   foreach each tag find all users with answered questions

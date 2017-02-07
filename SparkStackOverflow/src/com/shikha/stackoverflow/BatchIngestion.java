@@ -37,7 +37,7 @@ public class BatchIngestion {
         SparkSession spark = new SparkSession
         		.Builder()
         		.appName("Posts Handler")
-        		.master("spark://ip-172-31-2-73:7077").getOrCreate();
+        		.getOrCreate();
 
         // removes the first two lines
         // need to remove the last line too
