@@ -12,7 +12,7 @@ from cassandra.cluster import Cluster
 # Setting up connections to cassandra
 
 # Change the bolded text to your seed node public dns (no < or > symbols but keep quotations. Be careful to copy quotations as it might copy it as a special character and throw an error. Just delete the quotations and type them in and it should be fine. Also delete this comment line
-cluster = Cluster(['ec2-52-33-132-53.us-west-2.compute.amazonaws.com'])
+cluster = Cluster([''])
 
 # Change the bolded text to the keyspace which has the table you want to query. Same as above for < or > and quotations. Also delete this comment line
 session = cluster.connect('stackoverflow')

@@ -45,7 +45,7 @@
             tabledata +=   "<td>" + jsondata[i].creation_date + "</td>";            
             tabledata +=   "<td>" + jsondata[i].title + "</td>";
             tabledata +=   "<td>" + jsondata[i].tags + "</td>";
-            tabledata +=   "<td>" + jsondata[i].experts + "</td>";
+            tabledata +=   "<td>" + jsondata[i].experts.substring(0, 50) + "</td>";
             tabledata += "</tr>";
           }
           

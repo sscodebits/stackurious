@@ -1,4 +1,0 @@
-kafkaTopic=connect-posts1
-metadata.broker.list=ip-172-31-2-73:9092,ip-172-31-2-70:9092,ip-172-31-2-77:9092,ip-172-31-2-75:9092
-spark.cassandra.connection.host=ip-172-31-2-74
-spark.checkpointdir=hdfs://ec2-35-167-57-182.us-west-2.compute.amazonaws.com:9000/rddcheckpoint

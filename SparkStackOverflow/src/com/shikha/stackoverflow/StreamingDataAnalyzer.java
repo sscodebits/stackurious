@@ -57,7 +57,7 @@ public final class StreamingDataAnalyzer {
 		int windowDuration = 20;
 		
 		//Setting streaming spark context
-        SparkConf conf = new SparkConf().setAppName("Streaming Posts Handler");
+        SparkConf conf = new SparkConf().setAppName("Streaming Data Analyzer");
         JavaSparkContext sc = new JavaSparkContext(conf);
         Properties props = null;
 
@@ -170,51 +170,19 @@ public final class StreamingDataAnalyzer {
     	      public void call(JavaRDD<StreamPost> rdd, Time time) {
     	    	  SparkSession spark = JavaSparkSessionSingleton.getInstance(rdd.context().getConf(), null);
     	    	  Dataset<Row> questions = spark.createDataFrame(rdd, StreamPost.class);
-    	    	  //questions.show();
-    	    	  //questions.createOrReplaceTempView("Questions");
     	    	  
-    	    	  //Attaching Experts to questions
     	    	  Dataset<Row> post_experts = storeResults(spark, questions,
     	    			  "QUESTIONS", 
-    	    			  "SELECT date_format(creation_date, 'yyyy.MM.dd HH') as group_hour, id, creation_date, title, tags, e.expert_name as experts from QUESTIONS q JOIN (SELECT * From EXPERTS) e ON q.tags = e.tag",
+    	    			  "SELECT date_format(first_value(creation_date), 'yyyy.MM.dd HH') as group_hour, id, first_value(creation_date) as creation_date, first_value(title) as title, first_value(tags) as tags, concat_ws(',',collect_set(e.expert_name)) as experts from QUESTIONS q JOIN (SELECT * From EXPERTS) e ON q.tags = e.tag GROUP BY id",
     	    			  "live_posts_experts_by_hour");
-    	    	  
+
     	    	  //Storing last group_hour processed for posts_experts - need for querying data
     	          storeResults(spark, post_experts,
     	    				  "POSTS_EXPERTS", 
-    	    				  "SELECT 'live_posts_experts_by_hour' as table_name, group_hour as group_val FROM POSTS_EXPERTS ",
-    	    				  "posts_data");
-    	    	 
-    	    	  
-    	    	  //spark.sql("SELECT id,  from POST_EXPERT GROUP BY id");
-    	    	  
-    	    	  /*
-    	    	  rdd.map(new Function<StreamPost, StreamPost>() {
-					@Override
-					public StreamPost call(StreamPost arg0) throws Exception {
-						System.out.println("******************* PROCESSING a post ##############");
-						if (arg0 != null && arg0.getTags() != null) {
-							String tag = arg0.getTags();
-							String sql = "SELECT * from EXPERTS WHERE tag = '" + tag + "'";
-							System.out.println("********************** Getting two experts " + sql);
-							// get two experts
-							Dataset<Row> tagExpert = spark.sql(sql);
-							tagExpert.show();
-							Row[] expertRows = (Row[]) tagExpert.take(2);
-							if (expertRows != null) {
-								
-							}
-						}
-						return arg0;
-					}
-    	    		  
-    	    	  });
-    	    	  */
-    	    	
-    	      
+    	    				  "SELECT 'live_posts_experts_by_hour' as table_name,  group_hour as group_val FROM POSTS_EXPERTS group by group_hour",
+    	    				  "posts_data");    	      
     	    	  
     	      }
-       
        });
        
         
@@ -255,6 +223,7 @@ public final class StreamingDataAnalyzer {
 	        .builder()
 	        .config(sparkConf)
 	        .config("spark.cassandra.connection.host", cassandraHost)
+	        .enableHiveSupport()   // needed for collect_set call in spark sql for posts_experts_by_hour
 	        .getOrCreate();
 	    }
 	    return instance;
@@ -284,8 +253,6 @@ public final class StreamingDataAnalyzer {
 		 } else {
 			 tagCounts = tagDF;
 		 }
-	        //tagCounts.show();
-	        //tagCounts.javaRDD().saveAsTextFile(outFile + "/" +  type);
 	        
 	        //Save to database
 	        tagCounts

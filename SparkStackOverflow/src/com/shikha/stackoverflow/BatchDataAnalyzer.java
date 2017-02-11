@@ -34,7 +34,7 @@ public class BatchDataAnalyzer {
     
         SparkSession spark = new SparkSession
     		.Builder()
-    		.appName("Posts Handler")
+    		.appName("Batch Analyzer")
     		.config("spark.cassandra.connection.host", cassandraHost)
        		.getOrCreate();
     
@@ -44,18 +44,6 @@ public class BatchDataAnalyzer {
         		"tag_counts");
 
         Dataset<Row> postsDF = getDataFrame(spark, inputFile, "posts");
-//        storeResults(spark, postsDF, output, "posts",
-//        		"SELECT origp.id, origp.creation_date, origp.view_count, origp.title  from POSTS origp JOIN (SELECT * from POSTS) ansp ON origp.accepted_answer_id=ansp.id WHERE origp.post_type_id = 1 and origp.accepted_answer_id is not null ORDER BY origp.view_count DESC ",
-//        		"faq_answered");
-        
-      //find all the  posts of questions which are answered  and assign popularity count (view count +favorite count*10)
-      //storeResults(spark, postsDF, output, "posts",
-	//	"SELECT origp.id, origp.tags, origp.creation_date, origp.view_count, origp.title, (origp.view_count+origp.favorite_count*10) as pop_count from POSTS origp WHERE origp.post_type_id = '1' and origp.accepted_answer_id is not null ORDER BY tags, pop_count DESC ",
-		//"faq_answered");
-        
-      
-        
-       // Timestamp(DatatypeConverter.parseDateTime();
 
       postsDF.createOrReplaceTempView("POSTS2");
       // get all questions
@@ -103,7 +91,7 @@ public class BatchDataAnalyzer {
       
       //   count the number of answers of each user per tag
       storeResults(spark, expertsByTag, output, "experts",
-    		  "SELECT tag, count(*) as ans_count, user.display_name as expert_name FROM experts JOIN (SELECT * from users) user ON experts.expert_id=user.id GROUP BY tag, user.display_name HAVING count(*) > 5",
+    		  "SELECT tag, count(*) as ans_count, user.display_name as expert_name FROM experts JOIN (SELECT * from users) user ON experts.expert_id=user.id GROUP BY tag, user.display_name HAVING count(*) > 10",
     		  "tag_experts");
 
 
@@ -168,35 +156,5 @@ public class BatchDataAnalyzer {
 	        	  }
 	          }).mode(SaveMode.Overwrite).save();
 	 }
-     /*
-     postsDF.toJavaRDD().flatMap(new FlatMapFunction<Row, Row>() {
-
-			@Override
-			public Iterator<Row> call(Row arg0) throws Exception {
-				// TODO Auto-generated method stub
-				int tagI = arg0.fieldIndex("tags");
-				String tagList = arg0.getString(tagI);
-				List<Row> newList = new ArrayList<Row>();
-				
-				if (tagList != null && !tagList.isEmpty()) {	
-					// copy current row for each tag
-					for (String tag : tagList.split(",")) {
-						// copy current row
-						Object[] values = new Object[arg0.length()];
-						for (int i=0; i<arg0.length();i++) {
-							values[i] = arg0.get(i);
-						}
-						// override tag value
-						values[tagI] = tag;
-						Row newrow = RowFactory.create(values);
-						newList.add(newrow);
-					}
-				}
-				return newList.iterator();
-			}
-     	
-     });
-     */
-     
 
 }

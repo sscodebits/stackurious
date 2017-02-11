@@ -1,5 +1,8 @@
 package com.shikha.stackoverflow.common;
 
+import java.util.Collections;
+import java.util.List;
+
 import org.w3c.dom.Element;
 
 import com.shikha.stackoverflow.util.ParseUtil;
@@ -101,6 +104,14 @@ public class UserObject {
 		this.location = location;
 	}
 
+	public static List<UserObject> flattenUser(UserObject userInput) {
+		if (userInput == null || userInput.getId().isEmpty()) {
+			return Collections.emptyList();
+		} else {
+			return Collections.singletonList(userInput);
+		}
+	}
+	
 
 	public static UserObject parseElement(Element e) {
 		UserObject p = new UserObject();

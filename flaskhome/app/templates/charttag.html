@@ -128,17 +128,20 @@
     // setup Tag Selection for FAQ
     $(document).ready(function () { 
           //alert("before loadTag"); 
-          loadTagData('/api/tags', successLoadTags, failure);  
+          loadTagData('/api/tags?count=20', successLoadTags, failure);  
       });  
 
     function successLoadTags(data) {
            //alert(data);
            var items = data.tags;  
+           var selectedVal;
              
-          var inputElement = '<select id="inputtag"> <option  value="">Select</option>';  
+          var inputElement = '<select id="inputtag">';  
                // Add all the new items  
           for (var i = 0; i < items.length; i++) {  
                  var itemVal = items[i].name;  
+                 if (i == 0)
+                     selectedVal = itemVal;
                  inputElement += '<option value="' + itemVal + '">' + itemVal + '</option>';  
           }  
           inputElement += '</select>';  
@@ -146,17 +149,19 @@
           // assign the change event to provide an alert of the selected option value  
           $('#inputtag').on('change', function () {  
               var tagname = $(this).val();
+              onChangeInputTag(tagname);
+           });  
 
+          // select first element
+          onChangeInputTag(selectedVal);
+      }
+
+      function onChangeInputTag(tagname) {
               loadTagData("/api/tag/ans/"+ tagname +"?count=10", successLoadAns, failure);
 
               loadTagData("/api/tag/uans/"+ tagname +"?count=10", successLoadUnans, failure);
               loadTagData("/api/tag/experts/"+ tagname +"?count=10", successLoadExpert, failure);
-
-              //createTagChart(barFaqAsvg, dimple.plot.bar, "/api/tag/ans/"+ tagname + "?count=10", "faq");  
-              //createTagChart(barFaqUsvg, dimple.plot.bar, "/api/tag/uans/"+ tagname + "?count=10", "faq");  
-           });  
-
-    }
+      }
 
       function successLoadAns(data) {
              successLoadFaq(data, '#anslist');

@@ -36,7 +36,7 @@ public class BatchIngestion {
         
         SparkSession spark = new SparkSession
         		.Builder()
-        		.appName("Posts Handler")
+        		.appName("Posts Ingestion")
         		.getOrCreate();
 
         // removes the first two lines
@@ -53,16 +53,6 @@ public class BatchIngestion {
                 }
             }
         };
-
-        /*
-        Schema schema = null;
-        
-        try {
-           schema= new Schema.Parser().parse(new File("tag.avsc"));
-        } catch (IOException e) {
-        	e.printStackTrace();
-        }
-        */
         
         
         @SuppressWarnings("unchecked")
@@ -70,18 +60,17 @@ public class BatchIngestion {
         spark.read()
          .textFile(inputFile + "/Tags.xml")
          .javaRDD()
-         .mapPartitionsWithIndex(removeHeader, false)
-         .map(new Function<String, TagObject>() {
+         .flatMap(new FlatMapFunction<String, TagObject>() {
         	 @Override
-        	 public TagObject call(String line) throws Exception {
+        	 public Iterator<TagObject> call(String line) throws Exception {
         		 Element e = ParseUtil.parseString(line);
-                 return TagObject.parseElement(e);
-        		 //return RecordUtil.parseTag(e);
+                 List<TagObject> tagList = TagObject.flattenTag( TagObject.parseElement(e));
+                 return tagList.iterator();
         	 }
          });
         
         Dataset<Row> tagDF = spark.createDataFrame(tagsRDD, TagObject.class);
-        
+        tagDF.show();
         tagDF.write()
           .save(output + "/tags");
         
@@ -90,18 +79,18 @@ public class BatchIngestion {
         spark.read()
          .textFile(inputFile + "/Users.xml")
          .javaRDD()
-         .mapPartitionsWithIndex(removeHeader, false)
-         .map(new Function<String, UserObject>() {
+         .flatMap(new FlatMapFunction<String, UserObject>() {
         	 @Override
-        	 public UserObject call(String line) throws Exception {
+        	 public Iterator<UserObject> call(String line) throws Exception {
         		 Element e = ParseUtil.parseString(line);
-                 return UserObject.parseElement(e);
+        		 List<UserObject> userList = UserObject.flattenUser(UserObject.parseElement(e));
+                 return userList.iterator();
         		 //return RecordUtil.parseTag(e);
         	 }
          });
         
         Dataset<Row> userDF = spark.createDataFrame(usersRDD, UserObject.class);
-        
+        userDF.show();
         userDF.write()
           .save(output + "/users");
         
@@ -111,7 +100,6 @@ public class BatchIngestion {
         spark.read()
          .textFile(inputFile + "/Posts.xml")
          .javaRDD()
-         .mapPartitionsWithIndex(removeHeader, false)
          .flatMap(new FlatMapFunction<String, PostObject>() {//converting tags in post into list of tags
         	 @Override
         	 public Iterator<PostObject> call(String line) throws Exception {
@@ -121,27 +109,13 @@ public class BatchIngestion {
         	 }
          });
         
-        //.schema(schema)
         
         Dataset<Row> postDF = spark.createDataFrame(postRDD, PostObject.class);
         postDF.show(100);
         postDF.write() 
         .save(output + "/posts");
 
-        /*
-        tagDF.createOrReplaceTempView("tags");
-        Dataset<Row> tagData = spark.sql("SELECT id, name, count from tags");
-        JavaRDD<Row> tagDataRdd = tagData.javaRDD();
-        tagDataRdd.saveAsTextFile(output + "/tags2");
 
-
-        // Saves the Avro records read in
-        tagDF.write()
-          .format("com.databricks.spark.avro")
-          .option("avroSchema", schema.toString())
-          .save(output + "/tags");
-        */
-         
  	}
 	
 }

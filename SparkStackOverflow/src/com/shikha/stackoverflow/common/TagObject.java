@@ -1,5 +1,8 @@
 package com.shikha.stackoverflow.common;
 
+import java.util.Collections;
+import java.util.List;
+
 import org.w3c.dom.Element;
 
 import com.shikha.stackoverflow.util.ParseUtil;
@@ -32,6 +35,15 @@ public class TagObject {
 
 	String name;
 	long count;
+	
+	public static List<TagObject> flattenTag(TagObject userInput) {
+		if (userInput == null || userInput.getId().isEmpty()) {
+			return Collections.emptyList();
+		} else {
+			return Collections.singletonList(userInput);
+		}
+	}
+
 	
 	public static TagObject parseElement(Element e) {
 		TagObject p = new TagObject();
