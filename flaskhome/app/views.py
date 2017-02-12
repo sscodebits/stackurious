@@ -12,15 +12,13 @@ from cassandra.cluster import Cluster
 # Setting up connections to cassandra
 
 # Change the bolded text to your seed node public dns (no < or > symbols but keep quotations. Be careful to copy quotations as it might copy it as a special character and throw an error. Just delete the quotations and type them in and it should be fine. Also delete this comment line
-cluster = Cluster([''])
+cluster = Cluster(['ec2-52-26-185-186.us-west-2.compute.amazonaws.com'])
 
 # Change the bolded text to the keyspace which has the table you want to query. Same as above for < or > and quotations. Also delete this comment line
 session = cluster.connect('stackoverflow')
 
-@app.route('/')
-@app.route('/index')
 def index():
-  user = { 'nickname': 'Miguel' } # fake user
+  user = { 'nickname': 'Shikha' } # fake user
   return render_template("index.html", title = 'Home', user = user)
 
 @app.route('/api/<email>/<date>')
@@ -118,6 +116,8 @@ def tag():
 def chart_tag():
  return render_template("charttag.html")
 
+@app.route('/')
+@app.route('/index')
 @app.route('/chart/taglive')
 def chart_taglive():
  return render_template("charttaglive.html")

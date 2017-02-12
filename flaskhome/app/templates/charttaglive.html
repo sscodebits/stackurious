@@ -2,10 +2,13 @@
 {% extends "charttag.html" %} <!--this means that you are extending the base tempate -->
 {% block taglive %} <!-- this is the name of the block below -->
 
-<div class="panel panel-default">
+<h2 id="js-livetags">Live Trending Tags</h2>
+<a href="#">Back to Top</a>
 <div id="barLiveTag"/>
 </div>
 
+<h2 id="js-liveposts">Live Posts</h2>
+<a href="#">Back to Top</a>
 <div class="panel panel-default">
   <!-- Default panel contents -->
   <div class="panel-heading">Live Questions Stream</div>
@@ -63,7 +66,7 @@
           $('#barLiveTag').empty();
 
         // setup live tag chart
-        var liveTagChart = dimple.newSvg("#barLiveTag", 500, 500);
+        var liveTagChart = dimple.newSvg("#barLiveTag", 900, 500);
         var dimpleliveTagChart = createTagChart(liveTagChart, dimple.plot.bubble, "/api/livetags?count=10", "tags", "Top Live Tags over Sliding Window");
  
      }

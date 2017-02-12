@@ -16,8 +16,8 @@ public class StreamPost {
 			return post;
 		}
         //Post Stream        
-//newid,postTypeId=1,creationDate,tags,title,
-//id,postTypeId=2,parentId,creationDate,tags,title,AcceptedAnswer=0/1
+		//newid,postTypeId=1,creationDate,tags,title,
+		//id,postTypeId=2,parentId,creationDate,tags,title,AcceptedAnswer=0/1
 
 		String[] parsedString = line.split(",");
 		if (parsedString.length >= 6 ) {

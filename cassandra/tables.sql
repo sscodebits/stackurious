@@ -15,16 +15,16 @@ CREATE TABLE tag_counts (rundate timestamp, id text, name text, count int,
     PRIMARY KEY ((rundate), count, name)) WITH CLUSTERING ORDER BY (count DESC, name DESC);
 
 create table tag_counts_by_month (year int, month int, name text, count int,
-    PRIMARY KEY ((year, month), name)) WITH CLUSTERING ORDER BY (count DESC);
+    PRIMARY KEY ((year, month), count, name)) WITH CLUSTERING ORDER BY (count DESC, name DESC);
 
 
 CREATE TABLE faq_answered (id text, tags text, creation_date text, cdate timestamp, title text, view_count int, pop_count int,
-   PRIMARY KEY ((tags), view_count) ) WITH CLUSTERING ORDER BY (view_count DESC);
+   PRIMARY KEY ((tags), view_count, id) ) WITH CLUSTERING ORDER BY (view_count DESC, id ASC);
 CREATE TABLE faq_unanswered (id text, tags text, creation_date text, cdate timestamp, title text, view_count int, pop_count int,
-    PRIMARY KEY ((tags), view_count) ) WITH CLUSTERING ORDER BY (view_count DESC);
+    PRIMARY KEY ((tags), view_count, id) ) WITH CLUSTERING ORDER BY (view_count DESC, id ASC);
 
 CREATE TABLE tag_experts (tag text, expert_id text, expert_name text, ans_count int,
-    PRIMARY KEY ((tag), ans_count)) WITH CLUSTERING ORDER BY (ans_count DESC);
+    PRIMARY KEY ((tag), ans_count, expert_name)) WITH CLUSTERING ORDER BY (ans_count DESC, expert_name DESC);
 
 
 

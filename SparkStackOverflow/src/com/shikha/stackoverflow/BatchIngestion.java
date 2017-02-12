@@ -18,104 +18,71 @@ import com.shikha.stackoverflow.common.UserObject;
 import com.shikha.stackoverflow.util.ParseUtil;
 
 /**
- * This class read the xml file from s3 and parses it  
- * and creating a data frame and store it in the hdfs in parquet format
+ * This class read the xml file from s3 and parses it and creating a data frame
+ * and store it in the hdfs in parquet format
+ * 
  * @author shikha
  *
  */
 public class BatchIngestion {
 	public static void main(String[] args) {
-    	String inputFile, output;
-        if (args.length == 2) {
-        	inputFile = args[0];
-            output = args[1];
-        } else {
-            System.err.println("Expected: input output");
-            return;
-        }        
-        
-        SparkSession spark = new SparkSession
-        		.Builder()
-        		.appName("Posts Ingestion")
-        		.getOrCreate();
+		String inputFile, output;
+		if (args.length == 2) {
+			inputFile = args[0];
+			output = args[1];
+		} else {
+			System.err.println("Expected: input output");
+			return;
+		}
 
-        // removes the first two lines
-        // need to remove the last line too
-        Function2 removeHeader= new Function2<Integer, Iterator<String>, Iterator<String>>(){
+		SparkSession spark = new SparkSession.Builder().appName("Posts Ingestion").getOrCreate();
 
-			@Override
-			public Iterator<String> call(Integer arg0, Iterator<String> arg1) throws Exception {
-                if((arg0==0 || arg0==1) && arg1.hasNext()){
-                	arg1.next();
-                    return arg1;
-                } else {
-                    return arg1;
-                }
-            }
-        };
-        
-        
-        @SuppressWarnings("unchecked")
-		JavaRDD<TagObject> tagsRDD =
-        spark.read()
-         .textFile(inputFile + "/Tags.xml")
-         .javaRDD()
-         .flatMap(new FlatMapFunction<String, TagObject>() {
-        	 @Override
-        	 public Iterator<TagObject> call(String line) throws Exception {
-        		 Element e = ParseUtil.parseString(line);
-                 List<TagObject> tagList = TagObject.flattenTag( TagObject.parseElement(e));
-                 return tagList.iterator();
-        	 }
-         });
-        
-        Dataset<Row> tagDF = spark.createDataFrame(tagsRDD, TagObject.class);
-        tagDF.show();
-        tagDF.write()
-          .save(output + "/tags");
-        
-        @SuppressWarnings("unchecked")
-		JavaRDD<UserObject> usersRDD =
-        spark.read()
-         .textFile(inputFile + "/Users.xml")
-         .javaRDD()
-         .flatMap(new FlatMapFunction<String, UserObject>() {
-        	 @Override
-        	 public Iterator<UserObject> call(String line) throws Exception {
-        		 Element e = ParseUtil.parseString(line);
-        		 List<UserObject> userList = UserObject.flattenUser(UserObject.parseElement(e));
-                 return userList.iterator();
-        		 //return RecordUtil.parseTag(e);
-        	 }
-         });
-        
-        Dataset<Row> userDF = spark.createDataFrame(usersRDD, UserObject.class);
-        userDF.show();
-        userDF.write()
-          .save(output + "/users");
-        
+		@SuppressWarnings("unchecked")
+		JavaRDD<TagObject> tagsRDD = spark.read().textFile(inputFile + "/Tags.xml").javaRDD()
+				.flatMap(new FlatMapFunction<String, TagObject>() {
+					@Override
+					public Iterator<TagObject> call(String line) throws Exception {
+						Element e = ParseUtil.parseString(line);
+						List<TagObject> tagList = TagObject.flattenTag(TagObject.parseElement(e));
+						return tagList.iterator();
+					}
+				});
 
-        @SuppressWarnings("unchecked")
-		JavaRDD<PostObject> postRDD =
-        spark.read()
-         .textFile(inputFile + "/Posts.xml")
-         .javaRDD()
-         .flatMap(new FlatMapFunction<String, PostObject>() {//converting tags in post into list of tags
-        	 @Override
-        	 public Iterator<PostObject> call(String line) throws Exception {
-        		 Element e = ParseUtil.parseString(line);
-                 List<PostObject> postList = PostObject.flattenTags(PostObject.parseElement(e));
-                 return postList.iterator();
-        	 }
-         });
-        
-        
-        Dataset<Row> postDF = spark.createDataFrame(postRDD, PostObject.class);
-        postDF.show(100);
-        postDF.write() 
-        .save(output + "/posts");
+		Dataset<Row> tagDF = spark.createDataFrame(tagsRDD, TagObject.class);
+		tagDF.show();
+		tagDF.write().save(output + "/tags");
 
+		@SuppressWarnings("unchecked")
+		JavaRDD<UserObject> usersRDD = spark.read().textFile(inputFile + "/Users.xml").javaRDD()
+				.flatMap(new FlatMapFunction<String, UserObject>() {
+					@Override
+					public Iterator<UserObject> call(String line) throws Exception {
+						Element e = ParseUtil.parseString(line);
+						List<UserObject> userList = UserObject.flattenUser(UserObject.parseElement(e));
+						return userList.iterator();
+						// return RecordUtil.parseTag(e);
+					}
+				});
 
- 	}
-	
+		Dataset<Row> userDF = spark.createDataFrame(usersRDD, UserObject.class);
+		userDF.show();
+		userDF.write().save(output + "/users");
+
+		@SuppressWarnings("unchecked")
+		JavaRDD<PostObject> postRDD = spark.read().textFile(inputFile + "/Posts.xml").javaRDD()
+				.flatMap(new FlatMapFunction<String, PostObject>() {// converting tags in post into list of tags 
+					@Override
+					public Iterator<PostObject> call(String line) throws Exception {
+						Element e = ParseUtil.parseString(line);
+						List<PostObject> postList = PostObject.flattenTags(PostObject.parseElement(e));
+						return postList.iterator();
+					}
+				});
+
+		Dataset<Row> postDF = spark.createDataFrame(postRDD, PostObject.class);
+		postDF.show(100);
+		postDF.write().save(output + "/posts");
+
+	}
+
 }
