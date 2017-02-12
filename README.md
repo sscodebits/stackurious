@@ -3,12 +3,13 @@
 # Table of Contents
 
 1. [Introduction] (README.md#introduction)
-2. [Details of Implementation] (README.md#details-of-implementation)
-3. [Description of Data] (README.md#description-of-data)
-4. [Data Conversion](README.md#data-conversion)
-5. [Repo directory structure] (README.md#repo-directory-structure)
-6. [Testing your directory structure and output format] (README.md#testing-your-directory-structure-and-output-format)
-7. [FAQ] (README.md#faq)
+2. [Stackurious Features] (README.md#stackurious-features)
+3. [Data Pipeline] (README.md#data-pipeline)
+  * [Historical Data Analysis Details](README.md#historical-data-analysis-details)
+  * [Streaming Data Analysis Details](README.md#streaming-data-analysis-details)
+5. [AWS Cluster Details] (README.md#aws-cluster-details)
+6. [Visualization] (README.md#visualization)
+7. [Running Stackurious] (README.md#running-stackurious)
 
 
 # Introduction
@@ -132,7 +133,8 @@ Data Analysis is done with the help of Spark to read the data (in Parquet format
 
 ### Cassandra Schema
 
-```CREATE TABLE tag_counts (rundate timestamp, id text, name text, count int,
+```sql
+CREATE TABLE tag_counts (rundate timestamp, id text, name text, count int,
     PRIMARY KEY ((rundate), count, name)) WITH CLUSTERING ORDER BY (count DESC, name DESC);
 create table tag_counts_by_month (year int, month int, name text, count int,
     PRIMARY KEY ((year, month), count, name)) WITH CLUSTERING ORDER BY (count DESC, name DESC);
@@ -167,7 +169,7 @@ Streaming posts data is simulated using a python script and ingested to Kafka us
 
 ### Cassandra Schema
 
-```
+```sql
 CREATE TABLE live_posts_by_day (group_day text, id text, creation_date timestamp, post_type_id text, accepted_answer_id text, parent_id text, title text, tags text,
     PRIMARY KEY ((group_day), creation_date, id)) WITH CLUSTERING ORDER BY (creation_date DESC, id DESC);
 
@@ -185,7 +187,7 @@ Stackurious runs on 3 clusters on AWS:
 - 4 node M4 Large Cluster for Cassandra
 - 1 node M3 Medium for Flask
 
-# Flask Webserver
+# Visualization
 
 - Flask is integrated with Cassandra and data is fetched using API calls
 - Dimple on D3.js is used as the Charting solution
