@@ -1,0 +1,4 @@
+kafkaTopic=
+metadata.broker.list=
+spark.cassandra.connection.host=
+spark.checkpointdir=
