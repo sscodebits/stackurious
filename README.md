@@ -11,36 +11,54 @@
 7. [FAQ] (README.md#faq)
 
 
-##Introduction
+# Introduction
 
 Stackurious is a data pipeline to provide trends in StackOverFlow dataset and find the top experts for different areas e.g expert in machine learning, java etc.
 
-Also, provides real-time assignment of experts to incoming stream of questions.
+Also, it provides real-time assignment of experts to incoming stream of questions. It is built using the following technologies:
 
-### Queries - Batch
-*What queries are you asking on your data?
-*Find top 10 tags based on count
-*Find FAQ (based on Posts view and favorite counts)
-*Top Answered Questions (based on Accepted answers)
-*Top UnAnswered Questions
-*Find Experts for particular tag (based on UserIds of Accepted answer posts)
+- Spark 2.1.0
+- Spark Streaming 2.1.0
+- Apache Cassandra 3
+- Apache HDFS
+- Apache Kafka 0.10
+- Flask with Tornado, Bootstrap, Ajax and Dimple on D3.js
+
+# Stackurious Features
+
+Stackurious provides the user with trends on Tags based on real-time and historical analysis of Posts and User data.
+
+## Historical Data Analysis
+
+Stackurious has published their dataset of Posts and related info since 2008. This dataset is analyzed to provide the following information:
+
+- Top 10 Tags of All time based on usage count
+- Top Tags based on usage count by Month
+- Frequently Asked Questions co-related based on Posts tags 
+-- Top Answered Questions per Tag
+-- Top UnAnswered Questions per Tag
+- Experts for a Tag based on User of Accepted Answer for Questions
+
+![Tags by Count] (images/tagbycount.png)
+![FAQ] (images/faq_ans1.png)
 
 
+## Real-time Data Analysis
 
-### Queries - Streaming
+Posts data is simulated in real-time and analyzed using Spark Streaming to produce the following information:
 
-*For Incoming Posts
-*Attach top 2 experts to New Questions based on Tag
-*Current Trending tags
+- Trending Tags
+- Attach Top Experts based on Tags associated to the Incoming Posts
 
-###Stakurious - batch
-Using batch processing found Top 10 tags based on count on historical dataset
+![Trending Tag Counts] (images/livetags.png)
+![Live Posts] (images/livepostexperts.png)
 
-<img src="./images/tagbycount" width="600">
 
-Frequently asked questions based on tag chosen. Also, Expert is identified based on tag chosen
+# Historical Data Details
 
-<img src="./images/faq_ans6" width="600">
+## Data Format
+
+
 
 ###Other considerations and optional features
 
