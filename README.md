@@ -146,11 +146,11 @@ CREATE TABLE tag_experts (tag text, expert_id text, expert_name text, ans_count 
     PRIMARY KEY ((tag), ans_count, expert_name)) WITH CLUSTERING ORDER BY (ans_count DESC, expert_name DESC);
 ```
 
-## Streaming Data Anaylysis Details
+## Streaming Data Analysis Details
 
 Streaming posts data is simulated using a python script and ingested to Kafka using Kafka connect. 1000 posts/sec are ingested. Using Spark Streaming, Live Posts data is first stored in Cassandra table. It is then filtered to pull out just the questions from the post. Then, looking at the tag for incoming questions, experts are assigned using the pre processed data from tag_experts table in Cassandra. Results are stored in live_posts_experts_by_hour table.
 
-### Streaming Data Anylyzer
+### Streaming Data Analyzer
 
 - Incoming Posts
   - Posts are Streamed from Kafka
