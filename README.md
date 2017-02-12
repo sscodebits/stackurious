@@ -51,13 +51,13 @@ Posts data is simulated in real-time and analyzed using Spark Streaming to produ
 - Trending Tags
 - Attach Top Experts based on Tags associated to the Incoming Posts
 
-![Trending Tag Counts] (images/livetags.png)
-![Live Posts] (images/livepostexperts.png)
+![Trending Tag Counts] (images/live_trending_tags.JPG)
+![Live Posts] (images/liveposts.PNG)
 
 
 # Data Pipeline
 
-![Data pipeline] (images/datapipeline.PNG)
+![Data pipeline] (images/datapipeline.JPG)
 
 ## Historical Data Analysis Details
 
@@ -191,7 +191,7 @@ Stackurious runs on 3 clusters on AWS:
 
 - Flask is integrated with Cassandra and data is fetched using API calls
 - Dimple on D3.js is used as the Charting solution
-  - It fetches data from APIs written in vieww.py
+  - It fetches data from APIs written in views.py
   
 # Running Stackurious
 
