@@ -35,8 +35,8 @@ Stackurious has published their dataset of Posts and related info since 2008. Th
 - Top 10 Tags of All time based on usage count
 - Top Tags based on usage count by Month
 - Frequently Asked Questions co-related based on Posts tags 
--- Top Answered Questions per Tag
--- Top UnAnswered Questions per Tag
+  - Top Answered Questions per Tag  
+  - Top UnAnswered Questions per Tag
 - Experts for a Tag based on User of Accepted Answer for Questions
 
 ![Tags by Count] (images/tagbycount.PNG)
@@ -109,26 +109,26 @@ The Ingestion is done in Spark which reads XML data files from Amazon's S3 stora
 Data Analysis is done with the help of Spark to read the data (in Parquet format) directly into DataFrame. This data is analyzed using queries written in Spark Sql and the results are stored in Cassandra tables.
 
 - Top 10 Tags of All time based on usage count
--- Uses the Tags data from Tags.xml and persists it to tag_counts table in Cassandra
+  - Uses the Tags data from Tags.xml and persists it to tag_counts table in Cassandra
 - Top Tags based on usage count by Month
--- Uses the Posts data, filters for Questions based on PostTypeId, extracts the Tags
--- Extracts Year / Month from CreationDate
--- Groups on Year and Month and finds count of Posts
--- Results are stored in tagcounts_by_month in Cassandra
+  - Uses the Posts data, filters for Questions based on PostTypeId, extracts the Tags
+  - Extracts Year / Month from CreationDate
+  - Groups on Year and Month and finds count of Posts
+  - Results are stored in tagcounts_by_month in Cassandra
 - Frequently Asked Questions co-related based on Posts tags 
--- Top Answered Questions per Tag
---- Uses the Spark Sql dense_rank() Window Function
---- Finds the top 5 Answered Questions based on view_count for each Tag
---- Answered Questions are partitioned over Tags column and ranked by view_count in descending order
---- The top 5 are choosen for each Tag
---- Results are stored in faq_answered table in Cassandra
--- Top UnAnswered Questions per Tag
---- Similar logic as above except that the Set of Unanwered Questions with no Accepted answers are used 
+  - Top Answered Questions per Tag
+    - Uses the Spark Sql dense_rank() Window Function
+    - Finds the top 5 Answered Questions based on view_count for each Tag
+    - Answered Questions are partitioned over Tags column and ranked by view_count in descending order
+    - The top 5 are choosen for each Tag
+    - Results are stored in faq_answered table in Cassandra
+  - Top UnAnswered Questions per Tag
+    - Similar logic as above except that the Set of Unanwered Questions with no Accepted answers are used 
 - Experts for a Tag based on User of Accepted Answer for Questions
--- Questions with Accepted Answer Post Id are joined with Posts to find the UserId who had the Accepted Answer
--- This is then joined with Users to get the Display_Name
--- The data is grouped by Tag in the Questions and only users with >10 accepted answers are considered as Experts for that Tag
--- Results are stored in tag_experts table in Cassandra
+  - Questions with Accepted Answer Post Id are joined with Posts to find the UserId who had the Accepted Answer
+  - This is then joined with Users to get the Display_Name
+  - The data is grouped by Tag in the Questions and only users with >10 accepted answers are considered as Experts for that Tag
+  - Results are stored in tag_experts table in Cassandra
 
 ### Cassandra Schema
 
@@ -151,19 +151,19 @@ Streaming posts data is simulated using a python script and ingested to Kafka us
 ### Streaming Data Anylyzer
 
 - Incoming Posts
--- Posts are Streamed from Kafka
--- Persisted to live_posts_by_day table in Cassandra which is partitioned by day
+  - Posts are Streamed from Kafka
+  - Persisted to live_posts_by_day table in Cassandra which is partitioned by day
 - Trending Tags
--- Tags are extracted from Incoming Posts
--- They are convered to Pairs based on Tags so that reduceByKeyAndWindow can be used 
--- This uses a Window and Sliding interval to evaluate the posts in the last minute
--- ReduceTag and inverseReduceTag functions are provided to improve performance
--- Results are stored in live_tag_counts table in Cassandra
+  - Tags are extracted from Incoming Posts
+  - They are convered to Pairs based on Tags so that reduceByKeyAndWindow can be used 
+  - This uses a Window and Sliding interval to evaluate the posts in the last minute
+  - ReduceTag and inverseReduceTag functions are provided to improve performance
+  - Results are stored in live_tag_counts table in Cassandra
 - Attach Top Experts based on Tags associated to the Incoming Posts
--- Experts data is Read from tag_experts and Cached at the beginning of the Streaming process
--- Incoming Questions are joined with Experts DataFrame on Tags
--- This is grouped by Post Id and expert list is created by using collect_set Spark Sql Functions
--- Results are stored in live_posts_experts_by_hour table in Cassandra
+  - Experts data is Read from tag_experts and Cached at the beginning of the Streaming process
+  - Incoming Questions are joined with Experts DataFrame on Tags
+  - This is grouped by Post Id and expert list is created by using collect_set Spark Sql Functions
+  - Results are stored in live_posts_experts_by_hour table in Cassandra
 
 ### Cassandra Schema
 
@@ -177,4 +177,24 @@ CREATE TABLE live_posts_experts_by_hour (group_hour text, id text, creation_date
     PRIMARY KEY ((group_hour), creation_date, id)) WITH CLUSTERING ORDER BY (creation_date DESC, id DESC);
 ```
 
+# AWS Cluster Details
 
+Stackurious runs on 3 clusters on AWS:
+
+- 5 node M4 Large Cluster for Kafka, Spark and Spark Streaming
+- 4 node M4 Large Cluster for Cassandra
+- 1 node M3 Medium for Flask
+
+# Flask Webserver
+
+- Flask is integrated with Cassandra and data is fetched using API calls
+- Dimple on D3.js is used as the Charting solution
+  - It fetches data from APIs written in vieww.py
+  
+# Running Stackurious
+
+- Start Servers for Kafka, Spark Streaming
+- Start Kafka Connect producing Real-time posts to Kafka
+- Start Spark Streaming job
+   - Setup spark.props for AWS environment
+- Start python script to produce posts to file
