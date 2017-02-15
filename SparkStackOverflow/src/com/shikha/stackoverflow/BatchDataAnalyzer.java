@@ -40,9 +40,14 @@ public class BatchDataAnalyzer {
 		questions.createOrReplaceTempView("Questions");
 
 		// get tag counts by month
+		Dataset<Row> tagCountByMonth =
 		storeResults(spark, questions, output, "tag_counts_by_m",
 				"SELECT tags as name, year(creation_date) as year, month(creation_date) as month, count(*) as count FROM tag_counts_by_m GROUP BY year(creation_date), month(creation_date), tags",
 				"tag_counts_by_month");
+
+		storeResults(spark, tagCountByMonth, output, "tagCountByMonth",
+				"SELECT 'tag_counts_by_month' as table_name, concat(first(year), '_', format_string('%02d',first(month))) as group_val FROM tagCountByMonth group by year, month",
+				"posts_data", SaveMode.Append);
 
 		// dense_rank and other spark window function
 		// https://databricks.com/blog/2015/07/15/introducing-window-functions-in-spark-sql.html
@@ -125,8 +130,8 @@ public class BatchDataAnalyzer {
 	/**
 	 * Executing query and Storing results in Cassandra
 	 */
-	static void storeResults(SparkSession spark, Dataset<Row> tagDF, String outFile, String type, String query,
-			final String table) {
+	static Dataset<Row> storeResults(SparkSession spark, Dataset<Row> tagDF, String outFile, String type, String query,
+			final String table, SaveMode saveMode) {
 		tagDF.createOrReplaceTempView(type);
 		Dataset<Row> tagCounts = spark.sql(query);
 
@@ -137,7 +142,11 @@ public class BatchDataAnalyzer {
 				put("keyspace", "stackoverflow");
 				put("table", table);
 			}
-		}).mode(SaveMode.Overwrite).save();
+		}).mode(saveMode).save();
+		return tagCounts;
 	}
-
+	static Dataset<Row> storeResults(SparkSession spark, Dataset<Row> tagDF, String outFile, String type, String query,
+			final String table) {
+		return storeResults(spark, tagDF, outFile, type, query, table, SaveMode.Overwrite);
+	}
 }

@@ -31,6 +31,7 @@ def get_email(email, date):
        jsonresponse = [{"first name": x.fname, "last name": x.lname, "id": x.id, "message": x.message, "time": x.time} for x in response_list]
        return jsonify(emails=jsonresponse)
 
+#Executing SQL
 def get_data(stmt, params):
        count = request.args.get('count', '');
        if (count != ''):
@@ -85,6 +86,14 @@ def get_all_tags():
        response_list = get_data(stmt, [])
        jsonresponse = [{"id": x.id, "name": x.name, "count": x.count} for x in response_list]
        return jsonify(tags=jsonresponse)
+
+@app.route('/api/table_data/<table>')
+def get_table_data(table):
+       stmt = "SELECT group_val from posts_data where table_name = %s" 
+       response_list = get_data(stmt, [table])
+       jsonresponse = [{"group_val": x.group_val} for x in response_list]
+       return jsonify(table_data=jsonresponse)
+
 
 @app.route('/api/livetags')
 def get_live_tags():

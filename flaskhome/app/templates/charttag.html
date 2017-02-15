@@ -1,26 +1,27 @@
 {% extends "base.html" %} <!--this means that you are extending the base tempate -->
 {% block tagid %} <!-- this is the name of the block below -->
 
-<h2 id="js-toptags-alltime">Top Tags - All Time</h2>
+<!--h2 id="js-toptags-alltime">Top Tags - All Time</h2-->
     <div id="barChartTag"></div>
 
 <h2 id="js-toptags-month">Top Tags - By Month</h2>
 <a href="#">Back to Top</a><br/>
-    <select id="tagByMonth">
-      <option value="2016_12" selected="true">2016 Dec</option>
-      <option value="2016_11">2016 Nov</option>
-      <option value="2016_10">2016 Oct</option>
-      <option value="2016_9">2016 Sep</option>
-      <option value="2016_8">2016 Aug</option>
-      <option value="2016_7">2016 Jul</option>
-      <option value="2016_6">2016 Jun</option>
-      <option value="2016_5">2016 May</option>
-      <option value="2016_4">2016 Apr</option>
-      <option value="2016_3">2016 Mar</option>
-      <option value="2016_2">2016 Feb</option>
-      <option value="2016_1">2016 Jan</option>
+    <div id="tagbymonthselect"><select id="selecttagmonth">
+      <option value="12" selected="true">Dec</option>
+      <option value="11">Nov</option>
+      <option value="10">Oct</option>
+      <option value="9">Sep</option>
+      <option value="8">Aug</option>
+      <option value="7">Jul</option>
+      <option value="6">Jun</option>
+      <option value="5">May</option>
+      <option value="4">Apr</option>
+      <option value="3">Mar</option>
+      <option value="2">Feb</option>
+      <option value="1">Jan</option>
     </select>
-    <br/><br/>
+    <button id="tagbymonthbtn" class="btn">Go</button>
+    </div>
      <div id="tagChartByMonth"></div>
 
 <h2 id="js-faq"> Frequently Asked Questions</h2>
@@ -62,8 +63,8 @@
 
     <script type="text/javascript">
       $(document).ready(function () {
-        var barTagsvg = dimple.newSvg("#barChartTag", 950, 500);
-        createTagChart(barTagsvg, dimple.plot.bar, "/api/tags?count=10", "tags", "Top 10 Tags By Popularity");
+        //var barTagsvg = dimple.newSvg("#barChartTag", 950, 500);
+        //createTagChart(barTagsvg, dimple.plot.bar, "/api/tags?count=10", "tags", "Top 10 Tags By Popularity");
       });
       function createTagChart(svg, seriestype, url, dataKey, title) {
         var myChart = new dimple.chart(svg, []);
@@ -116,30 +117,60 @@
    // setup Tag Chart By Month
       var tagChartByMonth = dimple.newSvg("#tagChartByMonth", 950, 500);
       var dimpleChartByMonth = createTagChart(tagChartByMonth, dimple.plot.bar, "/api/tag/2016/12?count=10", "tags", "Top Tags For 2016 Dec");
-   
+    
+    //Load data from api   
     $(document).ready(function () {      
-      $('#tagByMonth').on('change', function () {
-          //  alert($(this).val());
-          var dateStr = $(this).val();
-          var dateSplit = dateStr.split("_");
-          var year = Number(dateSplit[0]);
-          var month = Number(dateSplit[1]);
+          loadTagData('/api/table_data/tag_counts_by_month', setupTagCounts, failure); 
+    });
 
+    //Setting the year dropdown 
+    function setupTagCounts(data) {
+      var tagCountsMonth = data.table_data;
+      //format of data 2012_08
+      var startYearStr = tagCountsMonth[0].group_val;
+      var startYear = Number(startYearStr.split("_")[0]);
+      var endYearStr = tagCountsMonth[tagCountsMonth.length-1].group_val;
+      var endYear = Number(endYearStr.split("_")[0]);
+         
+         //populate year dropdown
+          var inputElement = '<select id="selecttagyear">';
+               // Add all the new items
+          for (var i = startYear; i >= endYear; i--) {  
+                 inputElement += '<option value="' + i + '">' + i + '</option>';
+          }
+          inputElement += '</select>';
+      //Using jquery find div for monthselect and append year dropdown before it
+      $('#tagbymonthselect').prepend(inputElement);
+      
+      //Selecting december in Month by default
+      var    e = document.getElementById("selecttagmonth");
+      e.selectedIndex = 0;
+         
+      //on button click get year and month and call api and reload chart
+      $('#tagbymonthbtn').on('click', function () {
+          var e = document.getElementById("selecttagyear");
+          var year = Number(e.options[e.selectedIndex].value);
+          e = document.getElementById("selecttagmonth");
+          var month = Number(e.options[e.selectedIndex].value);
+          var monthStr = e.options[e.selectedIndex].text;
+
+          //alert(year + month);
+       //clearing contents of chart
        $('#tagChartByMonth').empty();
       
       var tagChartByMonth = dimple.newSvg("#tagChartByMonth", 950, 500);
-      var dimpleChartByMonth = createTagChart(tagChartByMonth, dimple.plot.bar, "/api/tag/" + year + "/" + month + "?count=10", "tags", "Top Tags For " + dateStr);
+      var dimpleChartByMonth = createTagChart(tagChartByMonth, dimple.plot.bar, "/api/tag/" + year + "/" + month + "?count=10", "tags", "Top Tags For " + year + " " + monthStr);
           
       });
-     });
+     }
 
 
     // setup Tag Selection for FAQ
     $(document).ready(function () { 
-          //alert("before loadTag"); 
           loadTagData('/api/tags?count=20', successLoadTags, failure);  
       });  
 
+    //Populating tag dropdown
     function successLoadTags(data) {
            //alert(data);
            var items = data.tags;  
