@@ -16,6 +16,8 @@
 
 Stackurious is a data pipeline to provide trends in StackOverFlow dataset and find the top experts for different areas e.g expert in machine learning, java etc.
 
+Presentation is available [here] (https://goo.gl/dKKhpk)
+
 Also, it provides real-time assignment of experts to incoming stream of questions. It is built using the following technologies:
 
 - Spark 2.1.0
