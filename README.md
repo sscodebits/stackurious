@@ -42,8 +42,8 @@ Stackurious has published their dataset of Posts and related info since 2008. Th
   - Top UnAnswered Questions per Tag
 - Experts for a Tag based on User of Accepted Answer for Questions
 
-![Tags by Count] (images/tagbycount.PNG)
-![FAQ] (images/faq.PNG)
+![Tags by Count](images/tagbycount.PNG)
+![FAQ](images/faq.PNG)
 
 
 ## Real-time Data Analysis
@@ -53,13 +53,13 @@ Posts data is simulated in real-time and analyzed using Spark Streaming to produ
 - Trending Tags
 - Attach Top Experts based on Tags associated to the Incoming Posts
 
-![Trending Tag Counts] (images/live_trending_tags.JPG)
-![Live Posts] (images/liveposts.PNG)
+![Trending Tag Counts](images/live_trending_tags.JPG)
+![Live Posts](images/liveposts.PNG)
 
 
 # Data Pipeline
 
-![Data pipeline] (images/datapipeline.JPG)
+![Data pipeline](images/datapipeline.JPG)
 
 ## Historical Data Analysis Details
 
